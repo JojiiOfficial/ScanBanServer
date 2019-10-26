@@ -52,7 +52,15 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	returnCode := insertIPs(report.Token, validIPs)
-	handleError(sendSuccess(w, returnCode), w, ServerError, 500)
+	resp := ""
+	if returnCode == 1 {
+		resp = "ok"
+	} else if returnCode == -1 {
+		resp = "user banned"
+	} else {
+		resp = "server error"
+	}
+	handleError(sendSuccess(w, resp), w, ServerError, 500)
 
 }
 
