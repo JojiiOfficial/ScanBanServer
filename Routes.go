@@ -19,7 +19,7 @@ type Routes []Route
 
 //NewRouter create new router
 func NewRouter() *mux.Router {
-	router := mux.NewRouter().StrictSlash(true)
+	router := mux.NewRouter().StrictSlash(false)
 	for _, route := range routes {
 		var handler http.Handler
 		handler = route.HandlerFunc
@@ -35,9 +35,9 @@ func NewRouter() *mux.Router {
 
 var routes = Routes{
 	Route{
-		"register",
+		"report",
 		"POST",
-		"/user/register",
-		registerUser,
+		"/report",
+		reportIPs,
 	},
 }
