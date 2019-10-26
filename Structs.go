@@ -33,5 +33,5 @@ type Status struct {
 //IPset a report set containing ip and a reason
 type IPset struct {
 	IP     string `json:"ip"`
-	Reason string `json:"r"`
+	Reason int    `json:"r"`
 }
