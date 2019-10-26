@@ -19,3 +19,11 @@ func removeIP(iplist []IPset, ip string) []IPset {
 	}
 	return newIPs
 }
+
+func concatIPList(ips []IPset) string {
+	iplist := "\""
+	for _, ip := range ips {
+		iplist += ip.IP + "\",\""
+	}
+	return iplist[:len(iplist)-2]
+}
