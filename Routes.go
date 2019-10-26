@@ -38,6 +38,6 @@ var routes = Routes{
 		"register",
 		"POST",
 		"/user/register",
-		nil,
+		registerUser,
 	},
 }
