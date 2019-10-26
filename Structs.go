@@ -12,6 +12,7 @@ type User struct {
 	ReportedIPs int       `db:"reportedIPs"`
 	LastReport  time.Time `db:"lastReport"`
 	CreatedAt   time.Time `db:"createdAt"`
+	IsValid     bool      `db:"isValid"`
 }
 
 // -------------- REST structs ----------------------

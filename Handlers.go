@@ -22,16 +22,28 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(report.Token) != 64 {
+		sendError("wrong token length", w, InvalidTokenError, 422)
+		return
+	}
+
 	if len(report.Ips) == 0 {
 		sendError("No ip given", w, WrongInputFormatError, 422)
 		return
 	}
 
 	validFound := false
+	var validIPs []IPset
 	for _, i := range report.Ips {
-		if !isStructInvalid(i) {
+		if !isStructInvalid(i) && isIPValid(i.IP) {
 			validFound = true
+			validIPs = append(validIPs, i)
 		}
+	}
+
+	if len(validIPs) == 0 {
+		sendError("No valid ip found", w, WrongInputFormatError, 404)
+		return
 	}
 
 	if !validFound {
@@ -39,7 +51,8 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	handleError(sendSuccess(w, "OK"), w, ServerError, 500)
+	returnCode := insertIPs(report.Token, validIPs)
+	handleError(sendSuccess(w, returnCode), w, ServerError, 500)
 }
 
 func handleUserInput(w http.ResponseWriter, r *http.Request, p interface{}) bool {
