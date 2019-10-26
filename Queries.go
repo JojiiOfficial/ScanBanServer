@@ -75,6 +75,11 @@ func insertIPs(token string, ips []IPset) int {
 			return -2
 		}
 
+		sqlUpdateUserReportCount := "UPDATE User SET reportedIPs=reportedIPs+1, lastReport=CURRENT_TIMESTAMP WHERE pk_id=?"
+		err = execDB(sqlUpdateUserReportCount, uid)
+		if err != nil {
+			return -2
+		}
 	}
 
 	return 1
