@@ -27,11 +27,16 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	validFound := false
 	for _, i := range report.Ips {
-		if isStructInvalid(i) {
-			sendError("input missing", w, WrongInputFormatError, 422)
-			return
+		if !isStructInvalid(i) {
+			validFound = true
 		}
+	}
+
+	if !validFound {
+		sendError("input missing", w, WrongInputFormatError, 422)
+		return
 	}
 
 	handleError(sendSuccess(w, "OK"), w, ServerError, 500)
