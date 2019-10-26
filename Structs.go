@@ -36,3 +36,9 @@ type IPset struct {
 	IP     string `json:"ip"`
 	Reason int    `json:"r"`
 }
+
+//IPID a pair of an IP in db with its ID
+type IPID struct {
+	ID int    `db:"pk_id"`
+	IP string `db:"ip"`
+}

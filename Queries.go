@@ -40,21 +40,41 @@ func insertIPs(token string, ips []IPset) int {
 
 	if len(ips) > 0 {
 		iplist := concatIPList(ips)
-		fmt.Println(iplist)
+
 		valuesBlockedIPs := ""
 		for _, ip := range ips {
-			valuesBlockedIPs += "(\"" + ip.IP + "\"," + strconv.Itoa(ip.Reason) + "),"
+			valuesBlockedIPs += "(\"" + ip.IP + "\"),"
 		}
-		sqlUpdateIps := "INSERT INTO BlockedIP (ip, reason) VALUES " + valuesBlockedIPs[:len(valuesBlockedIPs)-1] + " ON DUPLICATE KEY UPDATE reportCount=reportCount+1"
+		valuesBlockedIPs = valuesBlockedIPs[:len(valuesBlockedIPs)-1]
+		sqlUpdateIps := "INSERT INTO BlockedIP (ip) VALUES " + valuesBlockedIPs + " ON DUPLICATE KEY UPDATE reportCount=reportCount+1"
 		err = execDB(sqlUpdateIps)
 		if err != nil {
 			return -2
 		}
+
 		sqlInsertReporter := "INSERT INTO Reporter (Reporter.reporterID, Reporter.ip) SELECT " + strconv.Itoa(uid) + ",BlockedIP.ip FROM BlockedIP WHERE BlockedIP.ip in (" + iplist + ")"
 		err = execDB(sqlInsertReporter)
 		if err != nil {
 			return -2
 		}
+
+		sqlSelectIPs := "SELECT ip, pk_id FROM BlockedIP WHERE ip in (" + iplist + ")"
+		var ipids []IPID
+		err = queryRows(&ipids, sqlSelectIPs)
+		if err != nil {
+			return -2
+		}
+		IPreasonData := ""
+		for _, ip := range ips {
+			IPreasonData += "(" + strconv.Itoa(ipidFromIP(ipids, ip.IP).ID) + ", " + strconv.Itoa(ip.Reason) + "," + strconv.Itoa(uid) + "),"
+		}
+		IPreasonData = IPreasonData[:len(IPreasonData)-1]
+		fmt.Println(IPreasonData)
+		err = execDB("INSERT INTO IPreason (ip, reason, author) VALUES " + IPreasonData)
+		if err != nil {
+			return -2
+		}
+
 	}
 
 	return 1
