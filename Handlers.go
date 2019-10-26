@@ -53,6 +53,7 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 
 	returnCode := insertIPs(report.Token, validIPs)
 	handleError(sendSuccess(w, returnCode), w, ServerError, 500)
+
 }
 
 func handleUserInput(w http.ResponseWriter, r *http.Request, p interface{}) bool {

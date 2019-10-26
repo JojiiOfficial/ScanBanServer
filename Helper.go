@@ -9,3 +9,13 @@ func isIPValid(ip string) bool {
 	_, err := strconv.Atoi(strings.ReplaceAll(ip, ",", ""))
 	return err != nil
 }
+
+func removeIP(iplist []IPset, ip string) []IPset {
+	var newIPs []IPset
+	for _, cip := range iplist {
+		if cip.IP != ip {
+			newIPs = append(newIPs, cip)
+		}
+	}
+	return newIPs
+}
