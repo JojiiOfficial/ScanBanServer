@@ -10,12 +10,14 @@ var ResponseError = Status{"error", "An Servererror occurred"}
 var ResponseSuccess = Status{"success", ""}
 
 const (
-	ServerError           ErrorMessage = "Server Error"
+	//ServerError error from server
+	ServerError ErrorMessage = "Server Error"
+	//WrongInputFormatError wrong user input
 	WrongInputFormatError ErrorMessage = "Wrong inputFormat!"
-	EmptyError            ErrorMessage = "Wrong inputFormat!"
-	InvalidTokenError     ErrorMessage = "Token not valid"
-	PlaceNotFond          ErrorMessage = "Place not found"
-	PlaceAlreadyExists    ErrorMessage = "Place already exists"
-	BatchSizeTooLarge     ErrorMessage = "BatchSize soo large!"
-	WrongIntegerFormat    ErrorMessage = "Number is string"
+	//InvalidTokenError token is not valid
+	InvalidTokenError ErrorMessage = "Token not valid"
+	//BatchSizeTooLarge batch is too large
+	BatchSizeTooLarge ErrorMessage = "BatchSize soo large!"
+	//WrongIntegerFormat integer is probably no integer
+	WrongIntegerFormat ErrorMessage = "Number is string"
 )
