@@ -31,9 +31,10 @@ func insertIPs(token string, ips []IPset) int {
 		return -2
 	}
 
+	ownIP := getOwnIP()
 	for _, ip := range ips {
 		valid, _ := isIPValid(ip.IP)
-		if !valid || ip.IP == externIP || contains(alreadyInsertedIps, ip.IP) {
+		if !valid || ip.IP == ownIP || contains(alreadyInsertedIps, ip.IP) {
 			ips = removeIP(ips, ip.IP)
 		}
 	}
