@@ -34,6 +34,10 @@ func main() {
 	if errcode != 0 {
 		return
 	}
+	if !isIPValid(ip) {
+		fmt.Println("You got ip: ", ip, "but its not valid!")
+		return
+	}
 	fmt.Println("Your external ip is: " + ip)
 
 	initDB(readConfig("credentials.json"))
