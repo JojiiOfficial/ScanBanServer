@@ -40,4 +40,10 @@ var routes = Routes{
 		"/report",
 		reportIPs,
 	},
+	Route{
+		"fetchUpdate",
+		"POST",
+		"/fetch",
+		fetchIPs,
+	},
 }

@@ -65,6 +65,10 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func fetchIPs(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func handleUserInput(w http.ResponseWriter, r *http.Request, p interface{}) bool {
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 10000))
 	if err != nil {
