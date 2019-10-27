@@ -8,9 +8,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/thecodeteam/goodbye"
 )
+
+var externIP string
+var useDynDNS bool
 
 func main() {
 	ctx := context.Background()
@@ -30,6 +34,7 @@ func main() {
 	}
 
 	_, err = os.Stat("./dyn.ip")
+	useDynDNS = false
 	if err != nil {
 		if !handleIPRequest() {
 			return
@@ -43,17 +48,22 @@ func main() {
 				return
 			}
 		} else {
-			if !isIPValid(string(ip)) {
-				fmt.Println("You got ip:", string(ip), "but its not valid!")
+			ipe := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(string(ip), "\n", ""), "\r", ""), " ")
+			if !isIPValid(ipe) {
+				fmt.Println("You got ip:", ipe, "but its not valid!")
 				if !handleIPRequest() {
 					return
 				}
-			} else {
-				fmt.Println("Your ip is: " + string(ip))
 				fmt.Println("Using a static ip!")
+			} else {
+				fmt.Println("Your ip is: " + ipe)
+				useDynDNS = true
+				externIP = ipe
 			}
 		}
 	}
+
+	fmt.Println("", "", "", getOwnIP())
 
 	initDB(readConfig("credentials.json"))
 
@@ -61,17 +71,40 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
 
+func getOwnIP() string {
+	if useDynDNS {
+		return getDYNIP()
+	}
+	return externIP
+}
+
+func getDYNIP() string {
+	ip, err := ioutil.ReadFile("./dyn.ip")
+	if err != nil {
+		fmt.Println("Couldn't use dyn.ip file! Using ip from the start")
+		return externIP
+	}
+	ipe := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(string(ip), "\n", ""), "\r", ""), " ")
+	if !isIPValid(ipe) {
+		fmt.Println("You got ip:", ipe, "but its not valid! Using ip from the start")
+		return externIP
+	}
+	externIP = ipe
+	return ipe
+}
+
 func handleIPRequest() bool {
 	fmt.Println("Requesting ip")
-	ip, errcode := retrieveExternIP()
+	ipe, errcode := retrieveExternIP()
 	if errcode != 0 {
 		return false
 	}
-	if !isIPValid(ip) {
-		fmt.Println("You got ip:", ip, "but its not valid!")
+	if !isIPValid(ipe) {
+		fmt.Println("You got ip:", ipe, "but its not valid!")
 		return false
 	}
-	fmt.Println("Your external ip is: " + ip)
+	fmt.Println("Your external ip is: " + ipe)
+	externIP = ipe
 	return true
 }
 

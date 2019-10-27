@@ -6,6 +6,18 @@ import (
 )
 
 func isIPValid(ip string) bool {
+	if strings.HasPrefix(ip, ".") || strings.HasSuffix(ip, ".") || strings.Count(ip, ".") != 3 {
+		return false
+	}
+	for _, p := range strings.Split(ip, ".") {
+		part, err := strconv.Atoi(p)
+		if err != nil {
+			return false
+		}
+		if part > 255 || part < 0 {
+			return false
+		}
+	}
 	_, err := strconv.Atoi(strings.ReplaceAll(ip, ".", ""))
 	return err == nil
 }
