@@ -21,7 +21,7 @@ func insertIPs(token string, ips []IPset) int {
 	sqlGetInsertedIps := "SELECT BlockedIP.ip FROM `User` " +
 		"JOIN Reporter on Reporter.reporterID = User.pk_id " +
 		"JOIN BlockedIP on BlockedIP.ip = Reporter.ip " +
-		"WHERE User.token = ? AND Reporter.ip in (" + iplist + ")"
+		"WHERE User.token = ? AND BlockedIP.deleted=0 AND Reporter.ip in (" + iplist + ")"
 
 	var alreadyInsertedIps []string
 
@@ -47,7 +47,7 @@ func insertIPs(token string, ips []IPset) int {
 			valuesBlockedIPs += "(\"" + ip.IP + "\"),"
 		}
 		valuesBlockedIPs = valuesBlockedIPs[:len(valuesBlockedIPs)-1]
-		sqlUpdateIps := "INSERT INTO BlockedIP (ip) VALUES " + valuesBlockedIPs + " ON DUPLICATE KEY UPDATE reportCount=reportCount+1"
+		sqlUpdateIps := "INSERT INTO BlockedIP (ip) VALUES " + valuesBlockedIPs + " ON DUPLICATE KEY UPDATE reportCount=reportCount+1, deleted=0"
 		err = execDB(sqlUpdateIps)
 		if err != nil {
 			return -2
@@ -97,7 +97,7 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 	//sqlAdditions := ""
 
 	query :=
-		"SELECT ip " +
+		"SELECT ip,deleted " +
 			"FROM BlockedIP " +
 			"WHERE " +
 			"lastReport > FROM_UNIXTIME(?) "
@@ -112,6 +112,10 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 
 	if filter.ProxyAllowed == 0 {
 		query += "AND isProxy=0 "
+	}
+
+	if filter.Since == 0 {
+		query += "AND deleted=0 "
 	}
 
 	if filter.MaxIPs > 0 {

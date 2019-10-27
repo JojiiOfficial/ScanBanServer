@@ -66,5 +66,6 @@ type IPID struct {
 
 //IPList a list of ips from DB
 type IPList struct {
-	IP string `db:"ip" json:"ip"`
+	IP      string `db:"ip" json:"ip"`
+	Deleted int    `db:"deleted" json:"del"`
 }
