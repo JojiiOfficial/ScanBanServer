@@ -29,10 +29,31 @@ func main() {
 		return
 	}
 
+	fmt.Println("Requesting ip")
+	ip, errcode := retrieveExternIP()
+	if errcode != 0 {
+		return
+	}
+	fmt.Println("Your external ip is: " + ip)
+
 	initDB(readConfig("credentials.json"))
 
 	router := NewRouter()
 	log.Fatal(http.ListenAndServe(":8080", router))
+}
+
+func retrieveExternIP() (string, int) {
+	rest, err := http.Get("https://ifconfig.me/ip")
+	if err != nil {
+		fmt.Println("Couldn't retrieve extern ip: " + err.Error())
+		return "", -1
+	}
+	resp, err := ioutil.ReadAll(rest.Body)
+	if err != nil {
+		fmt.Println("Couldn't retrieve extern ip: " + err.Error())
+		return "", -1
+	}
+	return string(resp), 0
 }
 
 func readConfig(file string) DBConfig {
