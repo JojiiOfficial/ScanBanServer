@@ -11,11 +11,8 @@ func insertIPs(token string, ips []IPset) int {
 	// - user has ip already inserted
 	// - ip already in db ? update : insert
 
-	sqlCheckUserValid := "SELECT User.pk_id FROM User WHERE token=? AND User.isValid=1"
-
-	var uid int
-	err := queryRow(&uid, sqlCheckUserValid, token)
-	if err != nil && uid > 0 {
+	uid := IsUserValid(token)
+	if uid <= 0 {
 		return -1
 	}
 
@@ -28,7 +25,7 @@ func insertIPs(token string, ips []IPset) int {
 
 	var alreadyInsertedIps []string
 
-	err = queryRows(&alreadyInsertedIps, sqlGetInsertedIps, token)
+	err := queryRows(&alreadyInsertedIps, sqlGetInsertedIps, token)
 
 	if err != nil {
 		return -2
@@ -40,10 +37,6 @@ func insertIPs(token string, ips []IPset) int {
 			ips = removeIP(ips, ip.IP)
 		}
 	}
-
-	// for _, ip := range alreadyInsertedIps {
-	// 	ips = removeIP(ips, ip)
-	// }
 
 	if len(ips) > 0 {
 		iplist := concatIPList(ips)
@@ -90,4 +83,30 @@ func insertIPs(token string, ips []IPset) int {
 	}
 
 	return 1
+}
+
+func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
+	//check
+	// - user valid
+
+	uid := IsUserValid(token)
+	if uid <= 0 {
+		return nil, -1
+	}
+
+	var iplist []IPList
+	queryRows(&iplist, "SELECT ip FROM BlockedIP WHERE 1")
+
+	return iplist, 0
+}
+
+//IsUserValid returns userid if valid or -1 if invalid
+func IsUserValid(token string) int {
+	sqlCheckUserValid := "SELECT User.pk_id FROM User WHERE token=? AND User.isValid=1"
+	var uid int
+	err := queryRow(&uid, sqlCheckUserValid, token)
+	if err != nil && uid > 0 {
+		return -1
+	}
+	return uid
 }
