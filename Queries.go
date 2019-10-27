@@ -34,9 +34,16 @@ func insertIPs(token string, ips []IPset) int {
 		return -2
 	}
 
-	for _, ip := range alreadyInsertedIps {
-		ips = removeIP(ips, ip)
+	for _, ip := range ips {
+		valid, _ := isIPValid(ip.IP)
+		if !valid || ip.IP == externIP || contains(alreadyInsertedIps, ip.IP) {
+			ips = removeIP(ips, ip.IP)
+		}
 	}
+
+	// for _, ip := range alreadyInsertedIps {
+	// 	ips = removeIP(ips, ip)
+	// }
 
 	if len(ips) > 0 {
 		iplist := concatIPList(ips)
