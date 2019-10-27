@@ -29,6 +29,27 @@ type Status struct {
 	StatusMessage string `json:"statusMessage"`
 }
 
+//FetchRequest request strct for fetching changed ips
+type FetchRequest struct {
+	Token  string      `json:"token"`
+	Filter FetchFilter `json:"filter"`
+}
+
+//FetchFilter to filter result from fetch request
+type FetchFilter struct {
+	Since        uint64 `json:"since"`
+	MinReason    uint16 `json:"minReason"`
+	MinReports   uint16 `json:"minReports"`
+	ProxyAllowed bool   `json:"allowProxy"`
+	MaxIPs       uint   `json:"maxIps"`
+}
+
+//FetchResponse struct for fetch response
+type FetchResponse struct {
+	IPs              []IPList `json:"ips"`
+	CurrentTimestamp int64    `json:"cts"`
+}
+
 // -------------- Datatypes structs ----------------------
 
 //IPset a report set containing ip and a reason
@@ -41,4 +62,9 @@ type IPset struct {
 type IPID struct {
 	ID int    `db:"pk_id"`
 	IP string `db:"ip"`
+}
+
+//IPList a list of ips from DB
+type IPList struct {
+	IP string `db:"ip" json:"ip"`
 }

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 )
 
 func reportIPs(w http.ResponseWriter, r *http.Request) {
@@ -57,7 +58,7 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 	if returnCode == 1 {
 		resp = "ok"
 	} else if returnCode == -1 {
-		resp = "user banned"
+		resp = "user invalid"
 	} else {
 		resp = "server error"
 	}
@@ -66,7 +67,35 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 }
 
 func fetchIPs(w http.ResponseWriter, r *http.Request) {
+	var fetchRequest FetchRequest
 
+	if !handleUserInput(w, r, &fetchRequest) {
+		return
+	}
+
+	if isStructInvalid(fetchRequest) {
+		sendError("input missing", w, WrongInputFormatError, 422)
+		return
+	}
+
+	if len(fetchRequest.Token) != 64 {
+		sendError("wrong token length", w, InvalidTokenError, 422)
+		return
+	}
+
+	ips, err := fetchIPsFromDB(fetchRequest.Token, fetchRequest.Filter)
+	if err == -1 {
+		sendError("User invalid", w, InvalidTokenError, 422)
+		return
+	} else if err == 0 {
+		fetchresponse := FetchResponse{
+			IPs:              ips,
+			CurrentTimestamp: time.Now().UTC().Unix(),
+		}
+		handleError(sendSuccess(w, fetchresponse), w, ServerError, 500)
+	} else {
+		sendError("Server error", w, ServerError, 422)
+	}
 }
 
 func handleUserInput(w http.ResponseWriter, r *http.Request, p interface{}) bool {
@@ -153,6 +182,10 @@ func isEmptyValue(e reflect.Value) bool {
 			return false
 		}
 	case reflect.UnsafePointer:
+		{
+			return false
+		}
+	case reflect.Struct:
 		{
 			return false
 		}
