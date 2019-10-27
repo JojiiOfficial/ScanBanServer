@@ -49,7 +49,11 @@ func main() {
 			}
 		} else {
 			ipe := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(string(ip), "\n", ""), "\r", ""), " ")
-			if !isIPValid(ipe) {
+			valid, r := isIPValid(ipe)
+			if !valid {
+				if r == -1 {
+					fmt.Println("IP is a reserved ip!")
+				}
 				fmt.Println("You got ip:", ipe, "but its not valid!")
 				if !handleIPRequest() {
 					return
@@ -83,7 +87,8 @@ func getDYNIP() string {
 		return externIP
 	}
 	ipe := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(string(ip), "\n", ""), "\r", ""), " ")
-	if !isIPValid(ipe) {
+	valid, _ := isIPValid(ipe)
+	if !valid {
 		fmt.Println("You got ip:", ipe, "but its not valid! Using ip from the start")
 		return externIP
 	}
@@ -97,7 +102,8 @@ func handleIPRequest() bool {
 	if errcode != 0 {
 		return false
 	}
-	if !isIPValid(ipe) {
+	valid, _ := isIPValid(ipe)
+	if !valid {
 		fmt.Println("You got ip:", ipe, "but its not valid!")
 		return false
 	}
