@@ -63,8 +63,6 @@ func main() {
 		}
 	}
 
-	fmt.Println("", "", "", getOwnIP())
-
 	initDB(readConfig("credentials.json"))
 
 	router := NewRouter()
