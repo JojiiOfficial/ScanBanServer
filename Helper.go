@@ -6,8 +6,8 @@ import (
 )
 
 func isIPValid(ip string) bool {
-	_, err := strconv.Atoi(strings.ReplaceAll(ip, ",", ""))
-	return err != nil
+	_, err := strconv.Atoi(strings.ReplaceAll(ip, ".", ""))
+	return err == nil
 }
 
 func removeIP(iplist []IPset, ip string) []IPset {
