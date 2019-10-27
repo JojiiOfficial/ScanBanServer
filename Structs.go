@@ -37,11 +37,11 @@ type FetchRequest struct {
 
 //FetchFilter to filter result from fetch request
 type FetchFilter struct {
-	Since        uint64 `json:"since"`
-	MinReason    uint16 `json:"minReason"`
-	MinReports   uint16 `json:"minReports"`
-	ProxyAllowed bool   `json:"allowProxy"`
-	MaxIPs       uint   `json:"maxIps"`
+	Since        int64   `json:"since"`
+	MinReason    float64 `json:"minReason"`
+	MinReports   int     `json:"minReports"`
+	ProxyAllowed int     `json:"allowProxy"`
+	MaxIPs       uint    `json:"maxIPs"`
 }
 
 //FetchResponse struct for fetch response

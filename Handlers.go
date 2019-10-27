@@ -87,12 +87,16 @@ func fetchIPs(w http.ResponseWriter, r *http.Request) {
 	if err == -1 {
 		sendError("User invalid", w, InvalidTokenError, 422)
 		return
-	} else if err == 0 {
-		fetchresponse := FetchResponse{
-			IPs:              ips,
-			CurrentTimestamp: time.Now().UTC().Unix(),
+	} else if err >= 0 {
+		if len(ips) == 0 {
+			handleError(sendSuccess(w, "[]"), w, ServerError, 500)
+		} else {
+			fetchresponse := FetchResponse{
+				IPs:              ips,
+				CurrentTimestamp: time.Now().UTC().Unix(),
+			}
+			handleError(sendSuccess(w, fetchresponse), w, ServerError, 500)
 		}
-		handleError(sendSuccess(w, fetchresponse), w, ServerError, 500)
 	} else {
 		sendError("Server error", w, ServerError, 422)
 	}

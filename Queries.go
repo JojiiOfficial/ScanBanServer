@@ -69,7 +69,6 @@ func insertIPs(token string, ips []IPset) int {
 			IPreasonData += "(" + strconv.Itoa(ipidFromIP(ipids, ip.IP).ID) + ", " + strconv.Itoa(ip.Reason) + "," + strconv.Itoa(uid) + "),"
 		}
 		IPreasonData = IPreasonData[:len(IPreasonData)-1]
-		fmt.Println(IPreasonData)
 		err = execDB("INSERT INTO IPreason (ip, reason, author) VALUES " + IPreasonData)
 		if err != nil {
 			return -2
@@ -94,8 +93,37 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 		return nil, -1
 	}
 
+	//sqlAdditions := ""
+
+	query :=
+		"SELECT ip " +
+			"FROM BlockedIP " +
+			"WHERE " +
+			"lastReport > FROM_UNIXTIME(?) "
+
+	if filter.MinReason > 0 {
+		query += "AND (SELECT AVG(reason) FROM IPreason WHERE IPreason.ip=BlockedIP.pk_id) >= " + strconv.FormatFloat(filter.MinReason, 'f', 1, 32) + " "
+	}
+
+	if filter.MinReports > 0 {
+		query += "AND reportCount >= " + strconv.Itoa(filter.MinReports) + " "
+	}
+
+	if filter.ProxyAllowed == 0 {
+		query += "AND isProxy=0 "
+	}
+
+	if filter.MaxIPs > 0 {
+		query += "LIMIT " + strconv.FormatUint(uint64(filter.MaxIPs), 10)
+	}
+
 	var iplist []IPList
-	queryRows(&iplist, "SELECT ip FROM BlockedIP WHERE 1")
+	err := queryRows(&iplist, query, filter.Since)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return nil, 1
+	}
 
 	return iplist, 0
 }
