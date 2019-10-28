@@ -13,6 +13,8 @@ type DBConfig struct {
 	Username string `json:"username"`
 	Pass     string `json:"pass"`
 	Port     int    `json:"port"`
+	CertFile string `json:"cert"`
+	KeyFile  string `json:"key"`
 }
 
 var db *sqlx.DB

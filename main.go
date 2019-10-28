@@ -27,9 +27,9 @@ func main() {
 		}
 	})
 
-	_, err := os.Stat("./credentials.json")
+	_, err := os.Stat("./config.json")
 	if err != nil {
-		fmt.Println("Couldn't find credentials.json")
+		fmt.Println("Couldn't find config.json")
 		return
 	}
 
@@ -66,11 +66,22 @@ func main() {
 			}
 		}
 	}
+	config := readConfig("config.json")
+	initDB(config)
 
-	initDB(readConfig("credentials.json"))
+	_, err = os.Stat(config.CertFile)
+	if err != nil {
+		fmt.Println("Certfile does not exists")
+		return
+	}
+	_, err = os.Stat(config.KeyFile)
+	if err != nil {
+		fmt.Println("Keyfile does not exists")
+		return
+	}
 
 	router := NewRouter()
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServeTLS(":8080", config.CertFile, config.KeyFile, router))
 }
 
 func getOwnIP() string {
