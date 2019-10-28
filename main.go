@@ -81,7 +81,11 @@ func main() {
 	}
 
 	router := NewRouter()
-	log.Fatal(http.ListenAndServeTLS(":8080", config.CertFile, config.KeyFile, router))
+	go (func() {
+		log.Fatal(http.ListenAndServeTLS(":8081", config.CertFile, config.KeyFile, router))
+	})()
+	log.Fatal(http.ListenAndServe(":8080", router))
+
 }
 
 func getOwnIP() string {
