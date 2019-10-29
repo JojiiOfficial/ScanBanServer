@@ -23,13 +23,20 @@ func insertIPs(token string, ips []IPset) int {
 		"JOIN BlockedIP on BlockedIP.ip = Reporter.ip " +
 		"WHERE User.token = ? AND BlockedIP.deleted=0 AND Reporter.ip in (" + iplist + ")"
 
+	sqlGetWhitelisted := "SELECT ip FROM `IPwhitelist` WHERE ip in (" + iplist + ")"
 	var alreadyInsertedIps []string
 
-	err := queryRows(&alreadyInsertedIps, sqlGetInsertedIps, token)
-
+	err := queryRows(&alreadyInsertedIps, sqlGetWhitelisted)
 	if err != nil {
 		return -2
 	}
+
+	err = queryRows(&alreadyInsertedIps, sqlGetInsertedIps, token)
+	if err != nil {
+		return -2
+	}
+
+	fmt.Println(alreadyInsertedIps)
 
 	ownIP := getOwnIP()
 	for _, ip := range ips {

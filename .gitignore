@@ -1,4 +1,5 @@
 dyn.ip
+config.json
 main
 credentials.json
 __debug_bin

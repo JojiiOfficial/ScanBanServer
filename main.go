@@ -68,22 +68,25 @@ func main() {
 	}
 	config := readConfig("config.json")
 	initDB(config)
-
+	useTLS := true
 	_, err = os.Stat(config.CertFile)
 	if err != nil {
-		fmt.Println("Certfile does not exists")
-		return
+		fmt.Println("Certfile not found. HTTP only!")
+		useTLS = false
 	}
 	_, err = os.Stat(config.KeyFile)
 	if err != nil {
-		fmt.Println("Keyfile does not exists")
-		return
+		fmt.Println("Keyfile not found. HTTP only!")
+		useTLS = false
 	}
 
 	router := NewRouter()
-	go (func() {
-		log.Fatal(http.ListenAndServeTLS(":8081", config.CertFile, config.KeyFile, router))
-	})()
+	if useTLS {
+		go (func() {
+			log.Fatal(http.ListenAndServeTLS(":8081", config.CertFile, config.KeyFile, router))
+		})()
+
+	}
 	log.Fatal(http.ListenAndServe(":8080", router))
 
 }
