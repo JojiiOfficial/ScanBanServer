@@ -117,7 +117,7 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 		query += "AND reportCount >= " + strconv.Itoa(filter.MinReports) + " "
 	}
 
-	if filter.ProxyAllowed == 0 {
+	if filter.ProxyAllowed == -1 {
 		query += "AND isProxy=0 "
 	}
 
