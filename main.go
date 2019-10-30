@@ -30,6 +30,8 @@ func main() {
 	if err := cli.Root(root,
 		cli.Tree(help),
 		cli.Tree(runCMD),
+		cli.Tree(installCMD),
+		cli.Tree(stopCMD),
 		cli.Tree(startCMD),
 	).Run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -39,6 +41,7 @@ func main() {
 
 var externIP string
 var useDynDNS bool
+var serviceName = "ScanBanServer"
 
 func getOwnIP() string {
 	if useDynDNS {

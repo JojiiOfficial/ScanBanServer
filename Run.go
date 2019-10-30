@@ -18,9 +18,9 @@ type runT struct {
 }
 
 var runCMD = &cli.Command{
-	Name:    "start",
+	Name:    "run",
 	Aliases: []string{},
-	Desc:    "starts the server service",
+	Desc:    "run the server service",
 	Argv:    func() interface{} { return new(runT) },
 	Fn: func(ct *cli.Context) error {
 		argv := ct.Argv().(*runT)
