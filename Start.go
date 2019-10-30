@@ -1,9 +1,10 @@
 package main
 
 import (
-	"GoSystemd/SystemdGoService"
 	"fmt"
 	"os/exec"
+
+	"github.com/JojiiOfficial/SystemdGoService"
 
 	"github.com/mkideal/cli"
 )
