@@ -1,95 +1,44 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 
-	"github.com/thecodeteam/goodbye"
+	"github.com/mkideal/cli"
 )
+
+var help = cli.HelpCommand("display help information")
+
+type argT struct {
+	cli.Helper
+}
+
+var root = &cli.Command{
+	Desc: "this is root command",
+	Argv: func() interface{} { return new(argT) },
+	Fn: func(ctx *cli.Context) error {
+		fmt.Println("Usage: scanban <install/disable/start/stop>")
+		return nil
+	},
+}
+
+func main() {
+	if err := cli.Root(root,
+		cli.Tree(help),
+		cli.Tree(runCMD),
+		cli.Tree(startCMD),
+	).Run(os.Args[1:]); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
 
 var externIP string
 var useDynDNS bool
-
-func main() {
-	ctx := context.Background()
-	defer goodbye.Exit(ctx, -1)
-	goodbye.Notify(ctx)
-	goodbye.Register(func(ctx context.Context, sig os.Signal) {
-		if db != nil {
-			_ = db.Close()
-			fmt.Println("DB closed")
-		}
-	})
-
-	_, err := os.Stat("./config.json")
-	if err != nil {
-		fmt.Println("Couldn't find config.json")
-		return
-	}
-
-	_, err = os.Stat("./dyn.ip")
-	useDynDNS = false
-	if err != nil {
-		if !handleIPRequest() {
-			return
-		}
-	} else {
-		fmt.Println("Found dyn.ip file. Trying to use it")
-		ip, err := ioutil.ReadFile("./dyn.ip")
-		if err != nil {
-			fmt.Println("Couldn't use dyn.ip file! Using extern ip")
-			if !handleIPRequest() {
-				return
-			}
-		} else {
-			ipe := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(string(ip), "\n", ""), "\r", ""), " ")
-			valid, r := isIPValid(ipe)
-			if !valid {
-				if r == -1 {
-					fmt.Println("IP is a reserved ip!")
-				}
-				fmt.Println("You got ip:", ipe, "but its not valid!")
-				if !handleIPRequest() {
-					return
-				}
-				fmt.Println("Using a static ip!")
-			} else {
-				fmt.Println("Your ip is: " + ipe)
-				useDynDNS = true
-				externIP = ipe
-			}
-		}
-	}
-	config := readConfig("config.json")
-	initDB(config)
-	useTLS := true
-	_, err = os.Stat(config.CertFile)
-	if err != nil {
-		fmt.Println("Certfile not found. HTTP only!")
-		useTLS = false
-	}
-	_, err = os.Stat(config.KeyFile)
-	if err != nil {
-		fmt.Println("Keyfile not found. HTTP only!")
-		useTLS = false
-	}
-
-	router := NewRouter()
-	if useTLS {
-		go (func() {
-			log.Fatal(http.ListenAndServeTLS(":8081", config.CertFile, config.KeyFile, router))
-		})()
-
-	}
-	log.Fatal(http.ListenAndServe(":8080", router))
-
-}
 
 func getOwnIP() string {
 	if useDynDNS {
