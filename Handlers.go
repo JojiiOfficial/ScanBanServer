@@ -59,6 +59,8 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 		resp = "ok"
 	} else if returnCode == -1 {
 		resp = "user invalid"
+	} else if returnCode == -3 {
+		resp = "too many ips!"
 	} else {
 		resp = "server error"
 	}

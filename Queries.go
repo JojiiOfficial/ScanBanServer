@@ -13,6 +13,10 @@ func insertIPs(token string, ips []IPset) int {
 	// - user has ip already inserted
 	// - ip already in db ? update : insert
 
+	if len(ips) > 300 {
+		return -3
+	}
+
 	uid := IsUserValid(token)
 	if uid <= 0 {
 		return -1
