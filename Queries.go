@@ -89,16 +89,18 @@ func insertIPs(token string, ips []IPset) int {
 			return -2
 		}
 
-		for _, ip := range ips {
-			addr, err := net.LookupAddr(ip.IP)
-			if err == nil && len(addr) > 0 {
-				address := addr[0]
-				err = execDB("UPDATE BlockedIP SET Hostname=? Where ip=?", address, ip.IP)
-				if err != nil {
-					panic(err)
+		go (func() {
+			for _, ip := range ips {
+				addr, err := net.LookupAddr(ip.IP)
+				if err == nil && len(addr) > 0 {
+					address := addr[0]
+					err = execDB("UPDATE BlockedIP SET Hostname=? Where ip=?", address, ip.IP)
+					if err != nil {
+						panic(err)
+					}
 				}
 			}
-		}
+		})()
 	}
 
 	return 1
