@@ -38,8 +38,6 @@ func insertIPs(token string, ips []IPset) int {
 		return -2
 	}
 
-	fmt.Println(alreadyInsertedIps)
-
 	ownIP := getOwnIP()
 	for _, ip := range ips {
 		valid, _ := isIPValid(ip.IP)
@@ -120,8 +118,6 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 	if uid <= 0 {
 		return nil, -1
 	}
-
-	//sqlAdditions := ""
 
 	query :=
 		"SELECT ip,deleted " +
