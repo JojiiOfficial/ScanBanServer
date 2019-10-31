@@ -51,10 +51,10 @@ func insertIPs(token string, ips []IPset) int {
 
 		valuesBlockedIPs := ""
 		for _, ip := range ips {
-			valuesBlockedIPs += "(\"" + ip.IP + "\"),"
+			valuesBlockedIPs += "(\"" + ip.IP + "\"," + strconv.Itoa(ip.Valid) + "),"
 		}
 		valuesBlockedIPs = valuesBlockedIPs[:len(valuesBlockedIPs)-1]
-		sqlUpdateIps := "INSERT INTO BlockedIP (ip) VALUES " + valuesBlockedIPs + " ON DUPLICATE KEY UPDATE reportCount=reportCount+1, deleted=0"
+		sqlUpdateIps := "INSERT INTO BlockedIP (ip, validated) VALUES " + valuesBlockedIPs + " ON DUPLICATE KEY UPDATE reportCount=reportCount+1, deleted=0"
 		err = execDB(sqlUpdateIps)
 		if err != nil {
 			return -2

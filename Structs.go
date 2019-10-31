@@ -56,6 +56,7 @@ type FetchResponse struct {
 type IPset struct {
 	IP     string `json:"ip"`
 	Reason int    `json:"r"`
+	Valid  int    `json:"v"`
 }
 
 //IPID a pair of an IP in db with its ID
