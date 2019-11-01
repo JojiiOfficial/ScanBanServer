@@ -145,6 +145,10 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 		query += "AND deleted=0 "
 	}
 
+	if filter.OnlyValidatedIPs == -1 {
+		query += "AND validated=1 "
+	}
+
 	if filter.MaxIPs > 0 {
 		query += "LIMIT " + strconv.FormatUint(uint64(filter.MaxIPs), 10)
 	}
