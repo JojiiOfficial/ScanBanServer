@@ -25,11 +25,10 @@ func ipDataCheck(c chan *ipdata.IP, ip IPset) {
 	data, err := ipdataClient.Lookup(ip.IP)
 	if err != nil {
 		fmt.Println("Error looking up ip:", ip.IP, "", err.Error())
+		ipdataClient = nil
 		c <- nil
 		return
 	}
-
-	ipdataClient = nil
 	c <- &data
 }
 
