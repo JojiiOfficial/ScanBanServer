@@ -126,7 +126,7 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 		"SELECT ip,deleted " +
 			"FROM BlockedIP " +
 			"WHERE " +
-			"lastReport > FROM_UNIXTIME(?) "
+			"(lastReport >= FROM_UNIXTIME(?) OR firstReport >= FROM_UNIXTIME(?)) "
 
 	if filter.MinReason > 0 {
 		query += "AND (SELECT AVG(reason) FROM IPreason WHERE IPreason.ip=BlockedIP.pk_id) >= " + strconv.FormatFloat(filter.MinReason, 'f', 1, 32) + " "
@@ -153,7 +153,7 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 	}
 
 	var iplist []IPList
-	err := queryRows(&iplist, query, filter.Since)
+	err := queryRows(&iplist, query, filter.Since, filter.Since)
 
 	if err != nil {
 		fmt.Println(err.Error())
