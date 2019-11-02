@@ -45,7 +45,19 @@ func insertIPs(token string, ips []IPset) int {
 	ownIP := getOwnIP()
 	for _, ip := range ips {
 		valid, _ := isIPValid(ip.IP)
-		if !valid || ip.IP == ownIP || contains(alreadyInsertedIps, ip.IP) {
+		isAlreadyInserted := contains(alreadyInsertedIps, ip.IP)
+		if !valid || ip.IP == ownIP || isAlreadyInserted {
+			if isAlreadyInserted && ip.Reason > 1 {
+				err := execDB(
+					"UPDATE IPreason SET reason=? WHERE (ip = (SELECT pk_id FROM BlockedIP WHERE ip=?)) AND author=?",
+					ip.Reason,
+					ip.IP,
+					uid,
+				)
+				if err != nil {
+					fmt.Println("Update error: " + err.Error())
+				}
+			}
 			ips = removeIP(ips, ip.IP)
 		}
 	}

@@ -37,7 +37,7 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 	var validIPs []IPset
 	for _, i := range report.Ips {
 		valid, _ := isIPValid(i.IP)
-		if !isStructInvalid(i) && valid && (i.Reason >= 0 && i.Reason < 4) {
+		if !isStructInvalid(i) && valid && (i.Reason > 0 && i.Reason < 4) {
 			validFound = true
 			validIPs = append(validIPs, i)
 		}
