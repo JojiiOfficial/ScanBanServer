@@ -7,19 +7,20 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-//DBConfig config for DB
-type DBConfig struct {
-	Host     string `json:"host"`
-	Username string `json:"username"`
-	Pass     string `json:"pass"`
-	Port     int    `json:"port"`
-	CertFile string `json:"cert"`
-	KeyFile  string `json:"key"`
+//Config config for the server
+type Config struct {
+	Host         string `json:"host"`
+	Username     string `json:"username"`
+	Pass         string `json:"pass"`
+	Port         int    `json:"port"`
+	CertFile     string `json:"cert"`
+	KeyFile      string `json:"key"`
+	IPdataAPIKey string `json:"ipdataAPIkey"`
 }
 
 var db *sqlx.DB
 
-func initDB(config DBConfig) {
+func initDB(config Config) {
 	var err error
 	db, err = sqlx.Open("mysql", config.Username+":"+config.Pass+"@tcp("+config.Host+":"+strconv.Itoa(config.Port)+")/"+config.Username)
 	if err != nil {

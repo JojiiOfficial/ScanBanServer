@@ -95,12 +95,12 @@ func retrieveExternIP() (string, int) {
 	return string(resp), 0
 }
 
-func readConfig(file string) DBConfig {
+func readConfig(file string) Config {
 	dat, err := ioutil.ReadFile(file)
 	if err != nil {
 		panic(err)
 	}
-	res := DBConfig{}
+	res := Config{}
 	err = json.Unmarshal(dat, &res)
 	if err != nil {
 		panic(err)

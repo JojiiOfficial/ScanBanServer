@@ -10,12 +10,15 @@ import (
 	"strings"
 
 	"github.com/mkideal/cli"
+	"github.com/theckman/go-ipdata"
 	"github.com/thecodeteam/goodbye"
 )
 
 type runT struct {
 	cli.Helper
 }
+
+var ipdataClient *ipdata.Client
 
 var runCMD = &cli.Command{
 	Name:    "run",
@@ -74,6 +77,7 @@ var runCMD = &cli.Command{
 				}
 			}
 		}
+
 		config := readConfig("config.json")
 		initDB(config)
 		useTLS := true
@@ -86,6 +90,16 @@ var runCMD = &cli.Command{
 		if err != nil {
 			fmt.Println("Keyfile not found. HTTP only!")
 			useTLS = false
+		}
+
+		if len(config.IPdataAPIKey) > 0 {
+			ipd, err := ipdata.NewClient(config.IPdataAPIKey)
+			if err != nil {
+				fmt.Println("Could not connect to IPdata.co: ", err.Error())
+			} else {
+				fmt.Println("Successfully connected to Ipdata.co")
+				ipdataClient = &ipd
+			}
 		}
 
 		router := NewRouter()

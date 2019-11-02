@@ -2,9 +2,7 @@ package main
 
 import (
 	"fmt"
-	"net"
 	"strconv"
-	"time"
 )
 
 func insertIPs(token string, ips []IPset) int {
@@ -109,23 +107,7 @@ func insertIPs(token string, ips []IPset) int {
 			return -2
 		}
 
-		go (func() {
-			for _, ip := range ips {
-			a:
-				for i := 0; i <= 1; i++ {
-					fmt.Println("Lookup hostname try", i)
-					addr, err := net.LookupAddr(ip.IP)
-					if err == nil && len(addr) > 0 {
-						address := addr[0]
-						err = execDB("UPDATE BlockedIP SET Hostname=? Where ip=?", address, ip.IP)
-						if err == nil {
-							break a
-						}
-					}
-					time.Sleep(500 * time.Millisecond)
-				}
-			}
-		})()
+		doAnalytics(ips)
 	}
 
 	return 1
