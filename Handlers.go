@@ -33,11 +33,23 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ipheader := []string{"HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR", "HTTP_X_FORWARDED", "HTTP_X_CLUSTER_CLIENT_IP", "HTTP_FORWARDED_FOR", "HTTP_FORWARDED", "REMOTE_ADDR"}
+	var repIP string
+	for _, header := range ipheader {
+		cip := r.Header.Get(header)
+		if len(cip) > 0 {
+			repIP = cip
+			break
+		}
+	}
+
+	fmt.Println("Reporter ip:", repIP)
+
 	validFound := false
 	var validIPs []IPset
 	for _, i := range report.Ips {
 		valid, _ := isIPValid(i.IP)
-		if !isStructInvalid(i) && valid && (i.Reason > 0 && i.Reason < 4) {
+		if !isStructInvalid(i) && valid && (i.Reason > 0 && i.Reason < 4) && i.IP != repIP {
 			validFound = true
 			validIPs = append(validIPs, i)
 		}
