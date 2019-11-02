@@ -66,14 +66,25 @@ func updateWithIPdata(hostname string, ipdata ipdata.IP, ip IPset) {
 	if len(ipdata.ASN.Domain) > 0 {
 		domain = ipdata.ASN.Domain
 	}
+	knownAbuser := "0"
+	if ipdata.Threat.IsKnownAbuser {
+		knownAbuser = "1"
+	}
+	knownHacker := "0"
+	if ipdata.Threat.IsKnownAttacker {
+		knownHacker = "1"
+	}
 	err := execDB(
-		"UPDATE BlockedIP set Hostname=?, isProxy=?, type=(SELECT pk_id FROM IPtype WHERE type=?), domain=? WHERE ip=?",
+		"UPDATE BlockedIP set Hostname=?, isProxy=?, type=(SELECT pk_id FROM IPtype WHERE type=?), domain=?, knownAbuser=?,	knownHacker=? WHERE ip=?",
 		hostname,
 		isProxy,
 		ipdata.ASN.Type,
 		domain,
+		knownAbuser,
+		knownHacker,
 		ip.IP,
 	)
+
 	if err != nil {
 		fmt.Println("Error updating host and ipdata")
 	}
