@@ -38,6 +38,15 @@ CREATE TABLE IPtype (
   temporary tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+INSERT INTO IPtype (pk_id, `type`, description, `temporary`) VALUES
+(0, 'undefined', 'no given type', 0),
+(1, 'hosting', 'Hosing', 0),
+(2, 'isp', 'Internet service provider', 1),
+(3, 'edu', 'Educational institutions', 0),
+(4, 'gov', 'government agency', 0),
+(5, 'mil', 'Military organization', 0),
+(6, 'business', 'End-user organizations', 0);
+
 CREATE TABLE IPwhitelist (
   ip varchar(16) NOT NULL,
   added timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -48,6 +57,11 @@ CREATE TABLE Reason (
   description text NOT NULL,
   minRequestCount tinyint(3) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO Reason (pk_id, description, minRequestCount) VALUES
+(1, 'Scanner', 1),
+(2, 'Spammer', 5),
+(3, 'Hacker', 15);
 
 CREATE TABLE Reporter (
   pk_id int(10) UNSIGNED NOT NULL,
