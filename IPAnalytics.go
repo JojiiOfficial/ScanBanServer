@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/theckman/go-ipdata"
@@ -9,7 +10,7 @@ import (
 
 func hostnameCheck(c chan string, ip IPset) {
 	for i := 0; i <= 1; i++ {
-		LogInfo("Lookup hostname try", i)
+		LogInfo("Lookup hostname try " + strconv.Itoa(i))
 		addr, err := net.LookupAddr(ip.IP)
 		if err == nil && len(addr) > 0 {
 			c <- addr[0]
