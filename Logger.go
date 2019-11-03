@@ -33,7 +33,7 @@ func Log(level int, errLogger bool, msg string) {
 		logg = ErrorLogger
 	}
 
-	go logg.Printf(
+	logg.Printf(
 		"%s %s",
 		logTypeToString(level),
 		msg,

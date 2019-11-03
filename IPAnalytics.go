@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net"
 	"time"
 
@@ -10,7 +9,7 @@ import (
 
 func hostnameCheck(c chan string, ip IPset) {
 	for i := 0; i <= 1; i++ {
-		fmt.Println("Lookup hostname try", i)
+		LogInfo("Lookup hostname try", i)
 		addr, err := net.LookupAddr(ip.IP)
 		if err == nil && len(addr) > 0 {
 			c <- addr[0]
@@ -24,7 +23,7 @@ func hostnameCheck(c chan string, ip IPset) {
 func ipDataCheck(c chan *ipdata.IP, ip IPset) {
 	data, err := ipdataClient.Lookup(ip.IP)
 	if err != nil {
-		fmt.Println("Error looking up ip:", ip.IP, "", err.Error())
+		LogCritical("Error looking up ip: " + ip.IP + "  " + err.Error())
 		ipdataClient = nil
 		c <- nil
 		return
@@ -86,13 +85,13 @@ func updateWithIPdata(hostname string, ipdata ipdata.IP, ip IPset) {
 	)
 
 	if err != nil {
-		fmt.Println("Error updating host and ipdata")
+		LogCritical("Error updating host and ipdata")
 	}
 }
 
 func updateWithHostname(hostname string, ip IPset) {
 	err := execDB("UPDATE BlockedIP SET Hostname=? WHERE ip=?", hostname, ip.IP)
 	if err != nil {
-		fmt.Println("Error updating hostname!")
+		LogCritical("Error updating hostname!")
 	}
 }
