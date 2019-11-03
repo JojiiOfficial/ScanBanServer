@@ -34,16 +34,18 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ipheader := []string{"X-Real-Ip", "X-Forwarded-For", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR", "HTTP_X_FORWARDED", "HTTP_X_CLUSTER_CLIENT_IP", "HTTP_FORWARDED_FOR", "HTTP_FORWARDED", "REMOTE_ADDR"}
-	repIP := r.RemoteAddr
-	if len(strings.Trim(repIP, " ")) == 0 {
-		for _, header := range ipheader {
-			cip := r.Header.Get(header)
-			cip = strings.Trim(cip, " ")
-			if len(cip) > 0 {
-				repIP = cip
-				break
-			}
+	var repIP string
+	for _, header := range ipheader {
+		cip := r.Header.Get(header)
+		cip = strings.Trim(cip, " ")
+		if len(cip) > 0 {
+			repIP = cip
+			break
 		}
+	}
+	if len(strings.Trim(repIP, " ")) == 0 {
+		fmt.Println("Using rem addr")
+		repIP = r.RemoteAddr
 	}
 	repIP = repIP[:(strings.LastIndex(repIP, ":"))]
 
