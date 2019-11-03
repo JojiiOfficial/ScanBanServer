@@ -52,7 +52,7 @@ func insertIPs(token string, ips []IPset) int {
 		if !valid || ip.IP == ownIP || isAlreadyInserted {
 			if isAlreadyInserted && ip.Reason > 1 {
 				err := execDB(
-					"UPDATE IPreason SET reason=? WHERE (ip = (SELECT pk_id FROM BlockedIP WHERE ip=?)) AND author=?",
+					"UPDATE Reporter SET reason=? WHERE ip=? AND author=?",
 					ip.Reason,
 					ip.IP,
 					uid,
@@ -66,8 +66,6 @@ func insertIPs(token string, ips []IPset) int {
 	}
 
 	if len(ips) > 0 {
-		iplist := concatIPList(ips)
-
 		valuesBlockedIPs := ""
 		for _, ip := range ips {
 			valuesBlockedIPs += "(\"" + ip.IP + "\"," + strconv.Itoa(ip.Valid) + "),"
@@ -79,24 +77,14 @@ func insertIPs(token string, ips []IPset) int {
 			return -2
 		}
 
-		sqlInsertReporter := "INSERT INTO Reporter (Reporter.reporterID, Reporter.ip) SELECT " + strconv.Itoa(uid) + ",BlockedIP.ip FROM BlockedIP WHERE BlockedIP.ip in (" + iplist + ")"
-		err = execDB(sqlInsertReporter)
-		if err != nil {
-			return -2
-		}
+		sqlInsertReporter :=
+			"INSERT INTO Reporter (Reporter.reporterID, Reporter.ip, reason) VALUES "
 
-		sqlSelectIPs := "SELECT ip, pk_id FROM BlockedIP WHERE ip in (" + iplist + ")"
-		var ipids []IPID
-		err = queryRows(&ipids, sqlSelectIPs)
-		if err != nil {
-			return -2
-		}
-		IPreasonData := ""
+		repData := ""
 		for _, ip := range ips {
-			IPreasonData += "(" + strconv.Itoa(ipidFromIP(ipids, ip.IP).ID) + ", " + strconv.Itoa(ip.Reason) + "," + strconv.Itoa(uid) + "),"
+			repData += "(" + strconv.Itoa(uid) + ",(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=\"" + ip.IP + "\")," + strconv.Itoa(ip.Reason) + "),"
 		}
-		IPreasonData = IPreasonData[:len(IPreasonData)-1]
-		err = execDB("INSERT INTO IPreason (ip, reason, author) VALUES " + IPreasonData)
+		err = execDB(sqlInsertReporter + repData[:len(repData)-1])
 		if err != nil {
 			return -2
 		}
@@ -129,7 +117,7 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 			"(lastReport >= FROM_UNIXTIME(?) OR firstReport >= FROM_UNIXTIME(?)) "
 
 	if filter.MinReason > 0 {
-		query += "AND (SELECT AVG(reason) FROM IPreason WHERE IPreason.ip=BlockedIP.pk_id) >= " + strconv.FormatFloat(filter.MinReason, 'f', 1, 32) + " "
+		query += "AND (SELECT AVG(reason) FROM Reporter WHERE Reporter.ip=BlockedIP.pk_id) >= " + strconv.FormatFloat(filter.MinReason, 'f', 1, 32) + " "
 	}
 
 	if filter.MinReports > 0 {
