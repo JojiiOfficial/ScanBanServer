@@ -54,6 +54,7 @@ CREATE TABLE Reporter (
   reporterID int(10) UNSIGNED NOT NULL,
   reason tinyint(3) UNSIGNED NOT NULL,
   ip int(10) UNSIGNED NOT NULL,
+  note text,
   reportDate timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
