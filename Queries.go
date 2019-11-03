@@ -37,7 +37,6 @@ func insertIPs(token string, ips []IPset) int {
 			"Reporter.ip in (" + ip2list + ") " +
 			"AND " +
 			"Reporter.reporterID=?"
-	fmt.Println(sqlGetInsertedIps)
 
 	sqlGetWhitelisted := "SELECT ip FROM `IPwhitelist` WHERE ip in (" + iplist + ")"
 	var alreadyInsertedIps []string
