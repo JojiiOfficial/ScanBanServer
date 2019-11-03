@@ -44,7 +44,7 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if len(strings.Trim(repIP, " ")) == 0 {
-		fmt.Println("Using rem addr")
+		LogInfo("Using rem addr")
 		repIP = r.RemoteAddr
 	}
 	if strings.Contains(repIP, ":") {
