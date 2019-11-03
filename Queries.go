@@ -22,15 +22,22 @@ func insertIPs(token string, ips []IPset) int {
 
 	iplist := concatIPList(ips)
 
+	ip2list := ""
+	for _, ip := range ips {
+		ip2list += "(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=\"" + ip.IP + "\"),"
+	}
+	ip2list = ip2list[:len(ip2list)-1]
+
 	sqlGetInsertedIps :=
 		"SELECT BlockedIP.ip FROM Reporter " +
-			"JOIN BlockedIP on (BlockedIP.ip = Reporter.ip) " +
+			"JOIN BlockedIP on (BlockedIP.pk_id = Reporter.ip) " +
 			"WHERE " +
 			"BlockedIP.deleted=0 " +
 			"AND " +
-			"Reporter.ip in (" + iplist + ") " +
+			"Reporter.ip in (" + ip2list + ") " +
 			"AND " +
 			"Reporter.reporterID=?"
+	fmt.Println(sqlGetInsertedIps)
 
 	sqlGetWhitelisted := "SELECT ip FROM `IPwhitelist` WHERE ip in (" + iplist + ")"
 	var alreadyInsertedIps []string
@@ -52,7 +59,7 @@ func insertIPs(token string, ips []IPset) int {
 		if !valid || ip.IP == ownIP || isAlreadyInserted {
 			if isAlreadyInserted && ip.Reason > 1 {
 				err := execDB(
-					"UPDATE Reporter SET reason=? WHERE ip=? AND author=?",
+					"UPDATE Reporter SET reason=? WHERE ip=(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?) AND reporterID=?",
 					ip.Reason,
 					ip.IP,
 					uid,
