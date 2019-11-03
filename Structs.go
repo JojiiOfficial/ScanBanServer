@@ -20,6 +20,7 @@ type User struct {
 //ReportIPStruct incomming ip report
 type ReportIPStruct struct {
 	Token string  `json:"token"`
+	Note  *string `json:"note,omitempty"`
 	Ips   []IPset `json:"ips"`
 }
 

@@ -72,8 +72,11 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 		sendError("input missing", w, WrongInputFormatError, 422)
 		return
 	}
-
-	returnCode := insertIPs(report.Token, validIPs)
+	note := ""
+	if report.Note != nil && len(*report.Note) > 0 {
+		note = *report.Note
+	}
+	returnCode := insertIPs(report.Token, note, validIPs)
 	resp := ""
 	if returnCode == 1 {
 		resp = "ok"
@@ -173,6 +176,7 @@ func isStructInvalid(x interface{}) bool {
 	s := reflect.TypeOf(x)
 	for i := s.NumField() - 1; i >= 0; i-- {
 		e := reflect.ValueOf(x).Field(i)
+
 		if isEmptyValue(e) {
 			return true
 		}

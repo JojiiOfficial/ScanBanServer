@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-func insertIPs(token string, ips []IPset) int {
+func insertIPs(token, note string, ips []IPset) int {
 	//check
 	// - user valid
 	// - user has ip already inserted
@@ -84,11 +84,17 @@ func insertIPs(token string, ips []IPset) int {
 		}
 
 		sqlInsertReporter :=
-			"INSERT INTO Reporter (Reporter.reporterID, Reporter.ip, reason) VALUES "
+			"INSERT INTO Reporter (Reporter.reporterID, Reporter.ip, reason, note) VALUES "
 
 		repData := ""
+		note := EscapeSpecialChars(note)
+		if len(note) == 0 {
+			note = "NULL"
+		} else {
+			note = "\"" + note + "\""
+		}
 		for _, ip := range ips {
-			repData += "(" + strconv.Itoa(uid) + ",(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=\"" + ip.IP + "\")," + strconv.Itoa(ip.Reason) + "),"
+			repData += "(" + strconv.Itoa(uid) + ",(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=\"" + ip.IP + "\")," + strconv.Itoa(ip.Reason) + ", " + note + "),"
 		}
 		err = execDB(sqlInsertReporter + repData[:len(repData)-1])
 		if err != nil {
