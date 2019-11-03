@@ -9,13 +9,14 @@ import (
 
 //Config config for the server
 type Config struct {
-	Host         string `json:"host"`
-	Username     string `json:"username"`
-	Pass         string `json:"pass"`
-	Port         int    `json:"port"`
-	CertFile     string `json:"cert"`
-	KeyFile      string `json:"key"`
-	IPdataAPIKey string `json:"ipdataAPIkey"`
+	Host          string `json:"host"`
+	Username      string `json:"username"`
+	Pass          string `json:"pass"`
+	Port          int    `json:"port"`
+	CertFile      string `json:"cert"`
+	KeyFile       string `json:"key"`
+	IPdataAPIKey  string `json:"ipdataAPIkey"`
+	ShowTimeInLog bool   `json:"showLogTime"`
 }
 
 var db *sqlx.DB

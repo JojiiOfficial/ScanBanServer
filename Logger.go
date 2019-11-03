@@ -12,11 +12,15 @@ var DefaultLogger *log.Logger
 var ErrorLogger *log.Logger
 
 func initLogger(prefix string) {
+	timeFlag := log.Ldate | log.Ltime
+	if !showTimeInLog {
+		timeFlag = 0
+	}
 	if DefaultLogger == nil {
-		DefaultLogger = log.New(os.Stdout, prefix, log.Ldate|log.Ltime)
+		DefaultLogger = log.New(os.Stdout, prefix, timeFlag)
 	}
 	if ErrorLogger == nil {
-		ErrorLogger = log.New(os.Stderr, prefix, log.Ldate|log.Ltime)
+		ErrorLogger = log.New(os.Stderr, prefix, timeFlag)
 	}
 }
 

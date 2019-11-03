@@ -43,6 +43,9 @@ var runCMD = &cli.Command{
 			return nil
 		}
 
+		config := readConfig("config.json")
+		showTimeInLog = config.ShowTimeInLog
+
 		_, err = os.Stat("./dyn.ip")
 		useDynDNS = false
 		if err != nil {
@@ -77,7 +80,6 @@ var runCMD = &cli.Command{
 			}
 		}
 
-		config := readConfig("config.json")
 		initDB(config)
 
 		useTLS := false

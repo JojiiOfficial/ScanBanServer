@@ -42,6 +42,7 @@ var externIP string
 var useDynDNS bool
 var serviceName = "ScanBanServer"
 var logPrefix = ""
+var showTimeInLog = true
 
 func getOwnIP() string {
 	if useDynDNS {

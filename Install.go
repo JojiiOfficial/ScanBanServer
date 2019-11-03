@@ -27,13 +27,14 @@ var installCMD = &cli.Command{
 		if fe != nil {
 			fmt.Println("Config doesn't exists. Creating a new config.json...\nPlease fill the config.json with the DB credentials")
 			(&Config{
-				Host:         "localhost",
-				Pass:         "A database pass",
-				CertFile:     "",
-				KeyFile:      "",
-				Port:         3066,
-				Username:     "DB username",
-				IPdataAPIKey: "",
+				Host:          "localhost",
+				Pass:          "A database pass",
+				CertFile:      "",
+				KeyFile:       "",
+				Port:          3066,
+				Username:      "DB username",
+				IPdataAPIKey:  "",
+				ShowTimeInLog: true,
 			}).save("./config.json")
 
 			return nil
