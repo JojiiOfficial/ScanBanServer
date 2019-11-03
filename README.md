@@ -1,3 +1,6 @@
+### !This is currently in development!
+<br>
+
 # ScanBanServer
 This is a REST-API server for the [tripwire](https://github.com/JojiiOfficial/Tripwire-reporter) system. If you own multiple server on the internet which get scanned all over the time, this is the perfect ip-banning-network for you. It is created to log portscans and "report" them to your REST server(this repository on one of your server). If you want to block those scanner you can automatically generate IP-blocklists based on a filter to protect your machines against internet scanner like [shodan.io](https://shodan.io)<br>
 
