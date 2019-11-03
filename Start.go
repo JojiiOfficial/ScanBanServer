@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os/exec"
 
 	"github.com/JojiiOfficial/SystemdGoService"
@@ -22,16 +21,16 @@ var startCMD = &cli.Command{
 		argv := ct.Argv().(*startT)
 		_ = argv
 		if !SystemdGoService.SystemfileExists(SystemdGoService.NameToServiceFile(serviceName)) {
-			fmt.Println("No server found. Use './scanban install' to install it")
+			LogError("No server found. Use './scanban install' to install it")
 			return nil
 		}
 
 		err := SystemdGoService.SetServiceStatus(serviceName, SystemdGoService.Restart)
 		if err != nil {
-			fmt.Println("Error restarting service: ", err.Error())
+			LogError("Error restarting service: " + err.Error())
 			return nil
 		}
-		fmt.Println("Restarted successfully")
+		LogInfo("Restarted successfully")
 
 		return nil
 	},

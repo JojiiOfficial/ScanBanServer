@@ -25,10 +25,10 @@ var stopCMD = &cli.Command{
 
 		err := SystemdGoService.SetServiceStatus(serviceName, SystemdGoService.Stop)
 		if err != nil {
-			fmt.Println("Error stopping service: ", err.Error())
+			LogError("Error stopping service: " + err.Error())
 			return nil
 		}
-		fmt.Println("stopped successfully")
+		LogInfo("stopped successfully")
 
 		return nil
 	},

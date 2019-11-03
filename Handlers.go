@@ -51,8 +51,6 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 		repIP = repIP[:(strings.LastIndex(repIP, ":"))]
 	}
 
-	fmt.Println("Reporter ip:", repIP)
-
 	validFound := false
 	var validIPs []IPset
 	for _, i := range report.Ips {
@@ -130,11 +128,11 @@ func fetchIPs(w http.ResponseWriter, r *http.Request) {
 func handleUserInput(w http.ResponseWriter, r *http.Request, p interface{}) bool {
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 10000))
 	if err != nil {
-		PrintLogError(LogError, "ReadError: "+err.Error())
+		LogError("ReadError: " + err.Error())
 		return false
 	}
 	if err := r.Body.Close(); err != nil {
-		PrintLogError(LogError, "ReadError: "+err.Error())
+		LogError("ReadError: " + err.Error())
 		return false
 	}
 
@@ -156,7 +154,7 @@ func handleError(err error, w http.ResponseWriter, message ErrorMessage, statusC
 func sendError(erre string, w http.ResponseWriter, message ErrorMessage, statusCode int) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(statusCode)
-	PrintLogError(Critical, erre)
+	LogCritical(erre)
 
 	var de []byte
 	var err error

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 )
 
@@ -64,7 +63,7 @@ func insertIPs(token, note string, ips []IPset) int {
 					uid,
 				)
 				if err != nil {
-					fmt.Println("Update error: " + err.Error())
+					LogCritical("Update error: " + err.Error())
 				}
 			}
 			ips = removeIP(ips, ip.IP)
@@ -156,7 +155,7 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 	err := queryRows(&iplist, query, filter.Since, filter.Since)
 
 	if err != nil {
-		fmt.Println(err.Error())
+		LogCritical("Executing fetch: " + err.Error())
 		return nil, 1
 	}
 

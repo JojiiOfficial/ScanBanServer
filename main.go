@@ -41,6 +41,7 @@ func main() {
 var externIP string
 var useDynDNS bool
 var serviceName = "ScanBanServer"
+var logPrefix = ""
 
 func getOwnIP() string {
 	if useDynDNS {
@@ -52,13 +53,13 @@ func getOwnIP() string {
 func getDYNIP() string {
 	ip, err := ioutil.ReadFile("./dyn.ip")
 	if err != nil {
-		fmt.Println("Couldn't use dyn.ip file! Using ip from the start")
+		LogError("Couldn't use dyn.ip file! Using ip from the start")
 		return externIP
 	}
 	ipe := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(string(ip), "\n", ""), "\r", ""), " ")
 	valid, _ := isIPValid(ipe)
 	if !valid {
-		fmt.Println("You got ip:", ipe, "but its not valid! Using ip from the start")
+		LogInfo("You got ip :" + string(ip) + "but its not valid! Using ip from the start")
 		return externIP
 	}
 	externIP = ipe
@@ -66,17 +67,17 @@ func getDYNIP() string {
 }
 
 func handleIPRequest() bool {
-	fmt.Println("Requesting ip")
+	LogInfo("Requesting ip")
 	ipe, errcode := retrieveExternIP()
 	if errcode != 0 {
 		return false
 	}
 	valid, _ := isIPValid(ipe)
 	if !valid {
-		fmt.Println("You got ip:", ipe, "but its not valid!")
+		LogError("You got ip:" + ipe + "but its not valid!")
 		return false
 	}
-	fmt.Println("Your external ip is: " + ipe)
+	LogInfo("Your external ip is: " + ipe)
 	externIP = ipe
 	return true
 }
@@ -84,12 +85,12 @@ func handleIPRequest() bool {
 func retrieveExternIP() (string, int) {
 	rest, err := http.Get("https://ifconfig.me/ip")
 	if err != nil {
-		fmt.Println("Couldn't retrieve extern ip: " + err.Error())
+		LogError("Couldn't retrieve extern ip: " + err.Error())
 		return "", -1
 	}
 	resp, err := ioutil.ReadAll(rest.Body)
 	if err != nil {
-		fmt.Println("Couldn't retrieve extern ip: " + err.Error())
+		LogError("Couldn't retrieve extern ip: " + err.Error())
 		return "", -1
 	}
 	return string(resp), 0

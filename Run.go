@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -34,13 +33,13 @@ var runCMD = &cli.Command{
 		goodbye.Register(func(ctx context.Context, sig os.Signal) {
 			if db != nil {
 				_ = db.Close()
-				fmt.Println("DB closed")
+				LogInfo("DB closed")
 			}
 		})
 
 		_, err := os.Stat("./config.json")
 		if err != nil {
-			fmt.Println("Couldn't find config.json")
+			LogError("Couldn't find config.json")
 			return nil
 		}
 
@@ -51,10 +50,10 @@ var runCMD = &cli.Command{
 				return nil
 			}
 		} else {
-			fmt.Println("Found dyn.ip file. Trying to use it")
+			LogInfo("Found dyn.ip file. Trying to use it")
 			ip, err := ioutil.ReadFile("./dyn.ip")
 			if err != nil {
-				fmt.Println("Couldn't use dyn.ip file! Using extern ip")
+				LogError("Couldn't use dyn.ip file! Using extern ip")
 				if !handleIPRequest() {
 					return nil
 				}
@@ -63,15 +62,15 @@ var runCMD = &cli.Command{
 				valid, r := isIPValid(ipe)
 				if !valid {
 					if r == -1 {
-						fmt.Println("IP is a reserved ip!")
+						LogError("IP is a reserved ip!")
 					}
-					fmt.Println("You got ip:", ipe, "but its not valid!")
+					LogError("You got ip: " + ipe + " but its not valid!")
 					if !handleIPRequest() {
 						return nil
 					}
-					fmt.Println("Using a static ip!")
+					LogError("Using a static ip!")
 				} else {
-					fmt.Println("Your ip is: " + ipe)
+					LogInfo("Your ip is: " + ipe)
 					useDynDNS = true
 					externIP = ipe
 				}
@@ -80,24 +79,32 @@ var runCMD = &cli.Command{
 
 		config := readConfig("config.json")
 		initDB(config)
-		useTLS := true
-		_, err = os.Stat(config.CertFile)
-		if err != nil {
-			fmt.Println("Certfile not found. HTTP only!")
-			useTLS = false
+
+		useTLS := false
+		if len(config.CertFile) > 0 {
+			_, err = os.Stat(config.CertFile)
+			if err != nil {
+				LogError("Certfile not found. HTTP only!")
+				useTLS = false
+			} else {
+				useTLS = true
+			}
 		}
-		_, err = os.Stat(config.KeyFile)
-		if err != nil {
-			fmt.Println("Keyfile not found. HTTP only!")
-			useTLS = false
+
+		if len(config.KeyFile) > 0 {
+			_, err = os.Stat(config.KeyFile)
+			if err != nil {
+				LogError("Keyfile not found. HTTP only!")
+				useTLS = false
+			}
 		}
 
 		if len(config.IPdataAPIKey) > 0 {
 			ipd, err := ipdata.NewClient(config.IPdataAPIKey)
 			if err != nil {
-				fmt.Println("Could not connect to IPdata.co: ", err.Error())
+				LogError("Could not connect to IPdata.co: " + err.Error())
 			} else {
-				fmt.Println("Successfully connected to Ipdata.co")
+				LogInfo("Successfully connected to Ipdata.co")
 				ipdataClient = &ipd
 			}
 		}
@@ -107,8 +114,8 @@ var runCMD = &cli.Command{
 			go (func() {
 				log.Fatal(http.ListenAndServeTLS(":8081", config.CertFile, config.KeyFile, router))
 			})()
-
 		}
+
 		log.Fatal(http.ListenAndServe(":8080", router))
 
 		return nil
