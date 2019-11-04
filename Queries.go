@@ -57,10 +57,11 @@ func insertIPs(token, note string, ips []IPset) int {
 		if !valid || ip.IP == ownIP || isAlreadyInserted {
 			if isAlreadyInserted && ip.Reason > 1 {
 				err := execDB(
-					"UPDATE Reporter SET reason=? WHERE ip=(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?) AND reporterID=?",
+					"UPDATE Reporter SET reason=? WHERE ip=(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?) AND reporterID=? AND reason<?",
 					ip.Reason,
 					ip.IP,
 					uid,
+					ip.Reason,
 				)
 				if err != nil {
 					LogCritical("Update error: " + err.Error())
