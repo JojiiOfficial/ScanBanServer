@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"strings"
 )
 
 func insertIPs(token, note string, ips []IPset) int {
@@ -49,10 +50,9 @@ func insertIPs(token, note string, ips []IPset) int {
 	if err != nil {
 		return -2
 	}
-	note = EscapeSpecialChars(note)
-	if len(note) == 0 {
-		note = "NULL"
-	}
+
+	note = EscapeSpecialChars(strings.Trim(note, " "))
+
 	ownIP := getOwnIP()
 	for _, ip := range ips {
 		valid, _ := isIPValid(ip.IP)
@@ -70,7 +70,7 @@ func insertIPs(token, note string, ips []IPset) int {
 					LogCritical("Update error: " + err.Error())
 				}
 			}
-			if isAlreadyInserted {
+			if isAlreadyInserted && len(note) > 0 {
 				err := execDB(
 					"UPDATE Reporter SET note=? WHERE note IS NULL AND ip=(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?)",
 					note,
@@ -93,28 +93,38 @@ func insertIPs(token, note string, ips []IPset) int {
 		sqlUpdateIps := "INSERT INTO BlockedIP (ip, validated) VALUES " + valuesBlockedIPs + " ON DUPLICATE KEY UPDATE reportCount=reportCount+1, deleted=0"
 		err = execDB(sqlUpdateIps)
 		if err != nil {
+			LogCritical("Couldn't insert into BlockedIP: " + err.Error())
 			return -2
 		}
 
 		sqlInsertReporter :=
 			"INSERT INTO Reporter (Reporter.reporterID, Reporter.ip, reason, note) VALUES "
-		note = "\"" + note + "\""
+
+		if len(note) == 0 {
+			note = "NULL"
+		} else {
+			note = "\"" + note + "\""
+		}
 		repData := ""
 		for _, ip := range ips {
 			repData += "(" + strconv.Itoa(uid) + ",(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=\"" + ip.IP + "\")," + strconv.Itoa(ip.Reason) + ", " + note + "),"
 		}
 		err = execDB(sqlInsertReporter + repData[:len(repData)-1])
 		if err != nil {
+			LogCritical("Couldn't insert into Reporter: " + err.Error())
 			return -2
 		}
 
 		sqlUpdateUserReportCount := "UPDATE User SET reportedIPs=reportedIPs+?, lastReport=CURRENT_TIMESTAMP WHERE pk_id=?"
 		err = execDB(sqlUpdateUserReportCount, len(ips), uid)
 		if err != nil {
+			LogCritical("Couldn't update user: " + err.Error())
 			return -2
 		}
-
+		LogInfo("Added " + strconv.Itoa(len(ips)) + " new IPs with note " + note + " from " + strconv.Itoa(uid))
 		doAnalytics(ips)
+	} else {
+		LogInfo("Reported but no new IP added")
 	}
 
 	return 1
