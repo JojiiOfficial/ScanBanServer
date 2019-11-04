@@ -59,7 +59,7 @@ func doAnalytics(ips []IPset) {
 
 func getValidHostnameKeys() []string {
 	var list []string
-	err := queryRows(&list, "SELECT keyword FROM knownHostname")
+	err := queryRows(&list, "SELECT keyword FROM KnownHostname")
 	if err != nil {
 		LogCritical("Couldn't load Keywords: " + err.Error())
 		return []string{}
