@@ -3,6 +3,7 @@ package main
 import (
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/theckman/go-ipdata"
@@ -56,9 +57,52 @@ func doAnalytics(ips []IPset) {
 	})(ips)
 }
 
+func getValidHostnameKeys() []string {
+	var list []string
+	err := queryRows(&list, "SELECT keyword FROM knownHostname")
+	if err != nil {
+		LogCritical("Couldn't load Keywords: " + err.Error())
+		return []string{}
+	}
+	return list
+}
+
+func validateHostname(hostname string, validateList []string) bool {
+	for _, key := range validateList {
+		prefixStar := strings.HasPrefix(key, "*")
+		suffixStar := strings.HasSuffix(key, "*")
+		key = strings.ReplaceAll(key, "*", "")
+		if prefixStar && suffixStar {
+			if strings.Contains(hostname, key) {
+				return true
+			}
+		}
+
+		if !prefixStar && suffixStar {
+			if strings.HasPrefix(hostname, key) {
+				return true
+			}
+		}
+
+		if prefixStar && !suffixStar {
+			if strings.HasSuffix(hostname, key) {
+				return true
+			}
+		}
+		if !prefixStar && !suffixStar {
+			if hostname == key {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func updateWithIPdata(hostname *string, ipdata ipdata.IP, ip IPset) {
 	if len(*hostname) == 0 {
 		hostname = nil
+	} else {
+		updateValide(*hostname, ip.IP)
 	}
 	isProxy := 0
 	if ipdata.Threat.IsAnonymous {
@@ -96,9 +140,21 @@ func updateWithIPdata(hostname *string, ipdata ipdata.IP, ip IPset) {
 func updateWithHostname(hostname *string, ip IPset) {
 	if len(*hostname) == 0 {
 		hostname = nil
+	} else {
+		updateValide(*hostname, ip.IP)
 	}
 	err := execDB("UPDATE BlockedIP SET Hostname=? WHERE ip=?", hostname, ip.IP)
 	if err != nil {
 		LogCritical("Error updating hostname!")
+	}
+}
+
+func updateValide(hostname, ip string) {
+	allowedKeys := getValidHostnameKeys()
+	if validateHostname(hostname, allowedKeys) {
+		err := execDB("UPDATE BlockedIP SET validated=1 WHERE ip=?", ip)
+		if err != nil {
+			LogCritical("Couldn't update valid=1 on host: " + err.Error())
+		}
 	}
 }
