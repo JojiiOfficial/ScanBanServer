@@ -17,6 +17,7 @@ CREATE TABLE BlockedIP (
   domain text,
   Hostname text,
   type int(10) UNSIGNED NOT NULL,
+  dyn tinyint(1) NOT NULL DEFAULT '0',
   knownAbuser tinyint(1) NOT NULL DEFAULT '0',
   knownHacker tinyint(1) NOT NULL DEFAULT '0',
   deleted tinyint(1) NOT NULL DEFAULT '0'
@@ -34,22 +35,26 @@ DELIMITER ;
 CREATE TABLE IPtype (
   pk_id int(11) UNSIGNED NOT NULL,
   type varchar(10) NOT NULL,
-  description text NOT NULL,
-  temporary tinyint(1) NOT NULL DEFAULT '0'
+  description text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO IPtype (pk_id, `type`, description, `temporary`) VALUES
-(0, 'undefined', 'no given type', 0),
-(1, 'hosting', 'Hosing', 0),
-(2, 'isp', 'Internet service provider', 1),
-(3, 'edu', 'Educational institutions', 0),
-(4, 'gov', 'government agency', 0),
-(5, 'mil', 'Military organization', 0),
-(6, 'business', 'End-user organizations', 0);
+INSERT INTO IPtype (pk_id, `type`, description) VALUES
+(0, 'undefined', 'no given type'),
+(1, 'hosting', 'Hosing'),
+(2, 'isp', 'Internet service provider'),
+(3, 'edu', 'Educational institutions'),
+(4, 'gov', 'government agency'),
+(5, 'mil', 'Military organization'),
+(6, 'business', 'End-user organizations');
 
 CREATE TABLE IPwhitelist (
   ip varchar(16) NOT NULL,
   added timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE KnownHostname (
+  pk_id int(11) NOT NULL,
+  keyword text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE Reason (
@@ -96,6 +101,9 @@ ALTER TABLE IPwhitelist
   ADD PRIMARY KEY (ip),
   ADD UNIQUE KEY ip (ip);
 
+ALTER TABLE KnownHostname
+  ADD PRIMARY KEY (pk_id);
+
 ALTER TABLE Reason
   ADD PRIMARY KEY (pk_id);
 
@@ -110,6 +118,8 @@ ALTER TABLE BlockedIP
   MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 ALTER TABLE IPtype
   MODIFY pk_id int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
+ALTER TABLE KnownHostname
+  MODIFY pk_id int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE Reason
   MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 ALTER TABLE Reporter
