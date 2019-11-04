@@ -8,17 +8,18 @@ import (
 	"github.com/theckman/go-ipdata"
 )
 
-func hostnameCheck(c chan string, ip IPset) {
+func hostnameCheck(c chan *string, ip IPset) {
 	for i := 0; i <= 1; i++ {
 		LogInfo("Lookup hostname try " + strconv.Itoa(i))
 		addr, err := net.LookupAddr(ip.IP)
 		if err == nil && len(addr) > 0 {
-			c <- addr[0]
+			c <- &addr[0]
 			return
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
-	c <- ""
+	empty := ""
+	c <- &empty
 }
 
 func ipDataCheck(c chan *ipdata.IP, ip IPset) {
@@ -34,8 +35,9 @@ func ipDataCheck(c chan *ipdata.IP, ip IPset) {
 
 func doAnalytics(ips []IPset) {
 	go (func(ips []IPset) {
+		connectIPDataClient(config)
 		for _, ip := range ips {
-			cHost := make(chan string)
+			cHost := make(chan *string)
 			go hostnameCheck(cHost, ip)
 
 			if ipdataClient != nil {
@@ -54,17 +56,18 @@ func doAnalytics(ips []IPset) {
 	})(ips)
 }
 
-func updateWithIPdata(hostname string, ipdata ipdata.IP, ip IPset) {
-	if len(hostname) == 0 {
-		hostname = "NULL"
+func updateWithIPdata(hostname *string, ipdata ipdata.IP, ip IPset) {
+	if len(*hostname) == 0 {
+		hostname = nil
 	}
 	isProxy := 0
 	if ipdata.Threat.IsAnonymous {
 		isProxy = 1
 	}
-	domain := "NULL"
+	var domain *string
+	domain = nil
 	if len(ipdata.ASN.Domain) > 0 {
-		domain = ipdata.ASN.Domain
+		domain = &ipdata.ASN.Domain
 	}
 	knownAbuser := "0"
 	if ipdata.Threat.IsKnownAbuser {
@@ -90,7 +93,10 @@ func updateWithIPdata(hostname string, ipdata ipdata.IP, ip IPset) {
 	}
 }
 
-func updateWithHostname(hostname string, ip IPset) {
+func updateWithHostname(hostname *string, ip IPset) {
+	if len(*hostname) == 0 {
+		hostname = nil
+	}
 	err := execDB("UPDATE BlockedIP SET Hostname=? WHERE ip=?", hostname, ip.IP)
 	if err != nil {
 		LogCritical("Error updating hostname!")

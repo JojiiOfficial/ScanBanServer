@@ -18,6 +18,7 @@ type runT struct {
 }
 
 var ipdataClient *ipdata.Client
+var config Config
 
 var runCMD = &cli.Command{
 	Name:    "run",
@@ -43,7 +44,7 @@ var runCMD = &cli.Command{
 			return nil
 		}
 
-		config := readConfig("config.json")
+		config = readConfig("config.json")
 		showTimeInLog = config.ShowTimeInLog
 
 		_, err = os.Stat("./dyn.ip")
@@ -100,17 +101,7 @@ var runCMD = &cli.Command{
 				useTLS = false
 			}
 		}
-
-		if len(config.IPdataAPIKey) > 0 {
-			ipd, err := ipdata.NewClient(config.IPdataAPIKey)
-			if err != nil {
-				LogError("Could not connect to IPdata.co: " + err.Error())
-			} else {
-				LogInfo("Successfully connected to Ipdata.co")
-				ipdataClient = &ipd
-			}
-		}
-
+		connectIPDataClient(config)
 		router := NewRouter()
 		if useTLS {
 			go (func() {
@@ -122,4 +113,17 @@ var runCMD = &cli.Command{
 
 		return nil
 	},
+}
+
+func connectIPDataClient(config Config) {
+	if len(config.IPdataAPIKey) > 0 {
+		ipd, err := ipdata.NewClient(config.IPdataAPIKey)
+		if err != nil {
+			LogError("Could not connect to IPdata.co: " + err.Error())
+			ipdataClient = nil
+		} else {
+			LogInfo("Successfully connected to Ipdata.co")
+			ipdataClient = &ipd
+		}
+	}
 }

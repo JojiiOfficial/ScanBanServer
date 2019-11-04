@@ -49,7 +49,10 @@ func insertIPs(token, note string, ips []IPset) int {
 	if err != nil {
 		return -2
 	}
-
+	note = EscapeSpecialChars(note)
+	if len(note) == 0 {
+		note = "NULL"
+	}
 	ownIP := getOwnIP()
 	for _, ip := range ips {
 		valid, _ := isIPValid(ip.IP)
@@ -62,6 +65,16 @@ func insertIPs(token, note string, ips []IPset) int {
 					ip.IP,
 					uid,
 					ip.Reason,
+				)
+				if err != nil {
+					LogCritical("Update error: " + err.Error())
+				}
+			}
+			if isAlreadyInserted {
+				err := execDB(
+					"UPDATE Reporter SET note=? WHERE note IS NULL AND ip=(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?)",
+					note,
+					ip.IP,
 				)
 				if err != nil {
 					LogCritical("Update error: " + err.Error())
@@ -85,14 +98,8 @@ func insertIPs(token, note string, ips []IPset) int {
 
 		sqlInsertReporter :=
 			"INSERT INTO Reporter (Reporter.reporterID, Reporter.ip, reason, note) VALUES "
-
+		note = "\"" + note + "\""
 		repData := ""
-		note := EscapeSpecialChars(note)
-		if len(note) == 0 {
-			note = "NULL"
-		} else {
-			note = "\"" + note + "\""
-		}
 		for _, ip := range ips {
 			repData += "(" + strconv.Itoa(uid) + ",(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=\"" + ip.IP + "\")," + strconv.Itoa(ip.Reason) + ", " + note + "),"
 		}
