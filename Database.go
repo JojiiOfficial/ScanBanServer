@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	"sync"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
@@ -20,6 +21,7 @@ type Config struct {
 }
 
 var db *sqlx.DB
+var dbLock sync.Mutex
 
 func initDB(config Config) {
 	var err error
@@ -46,9 +48,11 @@ func queryRows(a interface{}, query string, args ...interface{}) error {
 }
 
 func execDB(query string, args ...interface{}) error {
+	dbLock.Lock()
 	tx := db.MustBegin()
 	tx.MustExec(query, args...)
 	err := tx.Commit()
+	dbLock.Unlock()
 	if err != nil {
 		return err
 	}
