@@ -12,7 +12,7 @@ CREATE TABLE BlockedIP (
   reportCount int(10) UNSIGNED NOT NULL DEFAULT '1',
   isProxy tinyint(1) NOT NULL DEFAULT '0',
   validated tinyint(1) NOT NULL DEFAULT '0',
-  lastReport timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  lastReport timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   firstReport timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   domain text,
   Hostname text,
@@ -23,10 +23,14 @@ CREATE TABLE BlockedIP (
   deleted tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 DELIMITER $$
-CREATE TRIGGER `Handle delete` BEFORE UPDATE ON `BlockedIP` FOR EACH ROW IF NEW.deleted = 1 THEN
+CREATE TRIGGER `Handle delete` BEFORE UPDATE ON `BlockedIP` FOR EACH ROW IF (NEW.deleted = 1) THEN
 
 SET NEW.reportCount = 0;
 DELETE FROM	Reporter WHERE Reporter.ip=NEW.pk_id;
+
+ELSEIF (NEW.reportCount>1) THEN
+
+SET NEW.lastReport=CURRENT_TIMESTAMP;
 
 END IF
 $$
