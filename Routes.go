@@ -38,7 +38,7 @@ var routes = Routes{
 		"report",
 		"POST",
 		"/report",
-		reportIPs,
+		reportIPs2,
 	},
 	Route{
 		"fetchUpdate",

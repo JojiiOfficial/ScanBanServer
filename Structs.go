@@ -17,6 +17,25 @@ type User struct {
 
 // -------------- REST structs ----------------------
 
+//ReportStruct report ips data
+type ReportStruct struct {
+	Token     string   `json:"tk"`
+	StartTime int64    `json:"st"`
+	IPs       []IPData `json:"ips"`
+}
+
+//IPData ipdata for Reportstruct
+type IPData struct {
+	IP    string         `json:"ip"`
+	Ports []IPPortReport `json:"prt"`
+}
+
+//IPPortReport reportdata for one ip
+type IPPortReport struct {
+	Port  int   `json:"p"`
+	Times []int `json:"t"`
+}
+
 //ReportIPStruct incomming ip report
 type ReportIPStruct struct {
 	Token string  `json:"token"`

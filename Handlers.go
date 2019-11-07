@@ -11,6 +11,22 @@ import (
 	"time"
 )
 
+func reportIPs2(w http.ResponseWriter, r *http.Request) {
+	var report ReportStruct
+
+	if !handleUserInput(w, r, &report) {
+		return
+	}
+	if isStructInvalid(report) {
+		sendError("input missing", w, WrongInputFormatError, 422)
+		return
+	}
+	ret := insertIPs2(report.Token, report.IPs, report.StartTime)
+	fmt.Println(ret)
+
+	handleError(sendSuccess(w, ret), w, ServerError, 500)
+}
+
 func reportIPs(w http.ResponseWriter, r *http.Request) {
 	var report ReportIPStruct
 
@@ -116,7 +132,7 @@ func fetchIPs(w http.ResponseWriter, r *http.Request) {
 		} else {
 			fetchresponse := FetchResponse{
 				IPs:              ips,
-				CurrentTimestamp: time.Now().UTC().Unix(),
+				CurrentTimestamp: time.Now().Unix(),
 			}
 			handleError(sendSuccess(w, fetchresponse), w, ServerError, 500)
 		}
@@ -189,6 +205,10 @@ func isEmptyValue(e reflect.Value) bool {
 			return true
 		}
 	case reflect.Int:
+		{
+			return false
+		}
+	case reflect.Int64:
 		{
 			return false
 		}
