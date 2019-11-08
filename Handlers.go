@@ -21,10 +21,64 @@ func reportIPs2(w http.ResponseWriter, r *http.Request) {
 		sendError("input missing", w, WrongInputFormatError, 422)
 		return
 	}
-	ret := insertIPs2(report.Token, report.IPs, report.StartTime)
-	fmt.Println(ret)
 
-	handleError(sendSuccess(w, ret), w, ServerError, 500)
+	ipheader := []string{"X-Forwarded-For", "X-Real-Ip", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR", "HTTP_X_FORWARDED", "HTTP_X_CLUSTER_CLIENT_IP", "HTTP_FORWARDED_FOR", "HTTP_FORWARDED", "REMOTE_ADDR"}
+	var repIP string
+	for _, header := range ipheader {
+		cip := r.Header.Get(header)
+		cip = strings.Trim(cip, " ")
+		if len(cip) > 0 {
+			repIP = cip
+			break
+		}
+	}
+	remAddr := false
+	if len(strings.Trim(repIP, " ")) == 0 {
+		repIP = r.RemoteAddr
+		remAddr = true
+	}
+	if strings.Contains(repIP, ":") {
+		repIP = repIP[:(strings.LastIndex(repIP, ":"))]
+	}
+
+	if remAddr {
+		LogInfo("Reporter: \"" + repIP + "\" (rem addr)")
+	} else {
+		LogInfo("Reporter: \"" + repIP + "\"")
+	}
+
+	ips := []IPData{}
+	validIPfound := false
+	ownIP := getOwnIP()
+	for _, ip := range report.IPs {
+		sIP := ip.IP
+		if valid, reas := isIPValid(sIP); valid && sIP != repIP && sIP != ownIP {
+			ips = append(ips, ip)
+			validIPfound = true
+		} else {
+			add := ""
+			if sIP == repIP {
+				add = "IP is reporters IP"
+			} else if reas != 1 {
+				if reas == 0 {
+					add = "No valid ipv4"
+				} else if reas == -1 {
+					add = "IP is reserved"
+				}
+			} else if sIP == ownIP {
+				add = "IP is servers IP"
+			}
+			LogInfo("IP \"" + sIP + "\" is not valid! " + add)
+		}
+	}
+
+	if validIPfound {
+		ret := insertIPs2(report.Token, ips, report.StartTime)
+		handleError(sendSuccess(w, ret), w, ServerError, 500)
+	} else {
+		sendError("no valid ip found in report", w, NoValidIPFound, 422)
+		return
+	}
 }
 
 func reportIPs(w http.ResponseWriter, r *http.Request) {
@@ -169,8 +223,12 @@ func handleError(err error, w http.ResponseWriter, message ErrorMessage, statusC
 
 func sendError(erre string, w http.ResponseWriter, message ErrorMessage, statusCode int) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	if statusCode == 500 {
+		LogCritical(erre)
+	} else {
+		LogError(erre)
+	}
 	w.WriteHeader(statusCode)
-	LogCritical(erre)
 
 	var de []byte
 	var err error

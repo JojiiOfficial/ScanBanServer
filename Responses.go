@@ -14,6 +14,8 @@ const (
 	ServerError ErrorMessage = "Server Error"
 	//WrongInputFormatError wrong user input
 	WrongInputFormatError ErrorMessage = "Wrong inputFormat!"
+	//NoValidIPFound no valid ip found in report
+	NoValidIPFound ErrorMessage = "No valid Ip found!"
 	//InvalidTokenError token is not valid
 	InvalidTokenError ErrorMessage = "Token not valid"
 	//BatchSizeTooLarge batch is too large

@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -22,13 +21,6 @@ func insertIPs2(token string, ipdatas []IPData, starttime int64) int {
 	}
 
 	for _, ipdata := range ipdatas {
-		vali, _ := isIPValid(ipdata.IP)
-		fmt.Println(vali)
-		own := getOwnIP()
-		if !vali || own == ipdata.IP {
-			LogInfo("IP is not valid: " + ipdata.IP)
-			continue
-		}
 		ipID, reportID, err := insertIP(ipdata, uid)
 		_ = ipID
 		if err != nil {
@@ -71,7 +63,6 @@ func insertIPs2(token string, ipdatas []IPData, starttime int64) int {
 }
 
 func insertBatch(batch map[int][]int, reportID, port int, startTime int64) {
-	fmt.Println(port, batch)
 	values := ""
 	for _, b := range batch {
 		scanCount := len(b)
