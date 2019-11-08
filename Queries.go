@@ -5,6 +5,12 @@ import (
 	"strings"
 )
 
+//ReportIPcount ip and count
+type ReportIPcount struct {
+	Count int `db:"c"`
+	ID    int `db:"iid"`
+}
+
 func insertIPs2(token string, ipdatas []IPData, starttime int64) int {
 	uid := IsUserValid(token)
 	if uid <= 0 {
@@ -12,36 +18,67 @@ func insertIPs2(token string, ipdatas []IPData, starttime int64) int {
 	}
 
 	for _, ipdata := range ipdatas {
-		err := insertIP(ipdata, uid)
+		ipID, reportID, err := insertIP(ipdata, uid)
+		_ = ipID
 		if err != nil {
-			LogCritical(err.Error())
+			LogCritical("Error inserting ip: " + err.Error())
 			continue
 		}
-		err = execDB("INSERT INTO Report (ip, reporterID) VALUES((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),?)", ipdata.IP, uid)
+		if reportID == -1 {
+			err = insertReport(ipdata, uid)
+			if err != nil {
+				LogCritical("Error inserting report: " + err.Error())
+				continue
+			}
+		}
+		err = execDB("UPDATE Report SET lastReport=CURRENT_TIMESTAMP WHERE pk_id=?", reportID)
 		if err != nil {
-			LogCritical("Couldn't execute insert ip into report: " + err.Error())
+			LogCritical("Error updating last report: " + err.Error())
 			continue
+		}
+		//IP And report is inserted
+		for _, iPPort := range ipdata.Ports {
+			_ = iPPort
+			//err := queryRow()
 		}
 	}
 
 	return 1
 }
 
-func insertIP(ipdata IPData, uid int) error {
-	var c int
-	err := queryRow(&c, "SELECT COUNT(*) FROM Report WHERE reporterID=? AND ip=ifnull((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),\"\")", uid, ipdata.IP)
+func insertReport(ipdata IPData, uid int) error {
+	err := execDB("INSERT INTO Report (ip, reporterID) VALUES((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),?)", ipdata.IP, uid)
 	if err != nil {
+		LogCritical("Couldn't execute insert ip into report: " + err.Error())
 		return err
 	}
-	if c != 0 {
-		return nil
+	return nil
+}
+
+func insertIP(ipdata IPData, uid int) (IPid int, reportID int, err error) {
+	IPid, reportID = -1, -1
+	err = nil
+
+	var c ReportIPcount
+	err = queryRow(&c, "SELECT COUNT(*) as c, ifnull(pk_id, -1)as iid FROM Report WHERE reporterID=? AND ip=ifnull((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),\"\")", uid, ipdata.IP)
+	if err != nil {
+		return
+	}
+	if c.Count != 0 {
+		reportID = c.ID
+		return
 	}
 	err = execDB("INSERT INTO BlockedIP (ip, validated) VALUES (?,0) ON DUPLICATE KEY UPDATE reportCount=reportCount+1, deleted=0", ipdata.IP)
 	if err != nil {
-		return err
+		return
 	}
 	doAnalytics(ipdata)
-	return nil
+	err = queryRow(&IPid, "SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?", ipdata.IP)
+	if err != nil {
+		return
+	}
+	reportID = c.ID
+	return
 }
 
 func insertIPs(token, note string, ips []IPset) int {
