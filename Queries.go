@@ -22,6 +22,13 @@ func insertIPs2(token string, ipdatas []IPData, starttime int64) int {
 	}
 
 	for _, ipdata := range ipdatas {
+		vali, _ := isIPValid(ipdata.IP)
+		fmt.Println(vali)
+		own := getOwnIP()
+		if !vali || own == ipdata.IP {
+			LogInfo("IP is not valid: " + ipdata.IP)
+			continue
+		}
 		ipID, reportID, err := insertIP(ipdata, uid)
 		_ = ipID
 		if err != nil {
@@ -72,12 +79,25 @@ func insertBatch(batch map[int][]int, reportID, port int, startTime int64) {
 		if scanCount == 0 {
 			continue
 		}
-		values += "(" + strconv.Itoa(reportID) + "," + strconv.Itoa(port) + "," + strconv.Itoa(scanCount) + ",FROM_UNIXTIME(" + strconv.FormatInt(startTime+int64(min(b)), 10) + ")),"
+		var rpID int
+		err := queryRow(&rpID, "SELECT IFNULL(MAX(pk_id),-1) FROM ReportPorts WHERE scanDate >= ? AND reportID=? AND port=?", startTime-int64(batchSize), reportID, port)
+		if err != nil {
+			LogCritical("Couldn't get reportPorts in current batch: " + err.Error())
+			continue
+		}
+
+		if rpID > 0 {
+			err = execDB("UPDATE ReportPorts SET count=count+? WHERE pk_id=?", scanCount, rpID)
+		} else {
+			values += "(" + strconv.Itoa(reportID) + "," + strconv.Itoa(port) + "," + strconv.Itoa(scanCount) + "," + strconv.FormatInt(startTime, 10) + "),"
+		}
 	}
 
-	err := execDB("INSERT INTO ReportPorts (reportID, port, count, scanDate) VALUES" + values[:len(values)-1])
-	if err != nil {
-		LogCritical("Couldn't insert ReportPort: " + err.Error())
+	if len(values) > 2 {
+		err := execDB("INSERT INTO ReportPorts (reportID, port, count, scanDate) VALUES" + values[:len(values)-1])
+		if err != nil {
+			LogCritical("Couldn't insert ReportPort: " + err.Error())
+		}
 	}
 }
 

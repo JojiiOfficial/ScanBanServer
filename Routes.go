@@ -38,6 +38,12 @@ var routes = Routes{
 		"report",
 		"POST",
 		"/report",
+		reportIPs,
+	},
+	Route{
+		"reportv2",
+		"POST",
+		"/reportnew",
 		reportIPs2,
 	},
 	Route{
