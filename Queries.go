@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -10,6 +12,8 @@ type ReportIPcount struct {
 	Count int `db:"c"`
 	ID    int `db:"iid"`
 }
+
+const batchSize = 30
 
 func insertIPs2(token string, ipdatas []IPData, starttime int64) int {
 	uid := IsUserValid(token)
@@ -25,7 +29,7 @@ func insertIPs2(token string, ipdatas []IPData, starttime int64) int {
 			continue
 		}
 		if reportID == -1 {
-			err = insertReport(ipdata, uid)
+			reportID, err = insertReport(ipdata, uid)
 			if err != nil {
 				LogCritical("Error inserting report: " + err.Error())
 				continue
@@ -37,22 +41,90 @@ func insertIPs2(token string, ipdatas []IPData, starttime int64) int {
 			continue
 		}
 		//IP And report is inserted
+
 		for _, iPPort := range ipdata.Ports {
-			_ = iPPort
-			//err := queryRow()
+			if len(iPPort.Times) == 0 || iPPort.Port < 1 || iPPort.Port > 65535 {
+				LogInfo("IP data invalid: " + ipdata.IP + ":" + strconv.Itoa(iPPort.Port))
+				continue
+			}
+			batches := make(map[int][]int)
+			for _, time := range iPPort.Times {
+				pos := (int)(time / batchSize)
+				_, ok := batches[pos]
+				if !ok {
+					batches[pos] = []int{time}
+				} else {
+					batches[pos] = append(batches[pos], time)
+				}
+			}
+			insertBatch(batches, reportID, iPPort.Port, starttime)
 		}
 	}
 
 	return 1
 }
 
-func insertReport(ipdata IPData, uid int) error {
+func insertBatch(batch map[int][]int, reportID, port int, startTime int64) {
+	fmt.Println(port, batch)
+	for _, b := range batch {
+		scanCount := len(b)
+		if scanCount == 0 {
+			continue
+		}
+		err := execDB("INSERT INTO ReportPorts (reportID, port, count, scanDate) VALUES(?,?,?,FROM_UNIXTIME(?))",
+			reportID, port, scanCount, startTime+int64(min(b)))
+		if err != nil {
+			LogCritical("Couldn't insert ReportPort: " + err.Error())
+		}
+	}
+}
+
+func min(intsl []int) int {
+	if len(intsl) == 0 {
+		return 0
+	}
+	if len(intsl) == 1 {
+		return intsl[0]
+	}
+	ix := intsl[0]
+	for _, i := range intsl {
+		if i < ix {
+			ix = i
+		}
+	}
+	return ix
+}
+
+func max(intsl []int) int {
+	if len(intsl) == 0 {
+		return 0
+	}
+	if len(intsl) == 1 {
+		return intsl[0]
+	}
+	ix := intsl[0]
+	for _, i := range intsl {
+		if i > ix {
+			ix = i
+		}
+	}
+	return ix
+}
+
+func insertReport(ipdata IPData, uid int) (int, error) {
 	err := execDB("INSERT INTO Report (ip, reporterID) VALUES((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),?)", ipdata.IP, uid)
 	if err != nil {
 		LogCritical("Couldn't execute insert ip into report: " + err.Error())
-		return err
+		return -1, err
 	}
-	return nil
+	var id int
+	err = queryRow(&id, "SELECT Report.pk_id FROM Report WHERE ip=(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?) AND reporterID=?", ipdata.IP, uid)
+	if err != nil {
+		return -1, err
+	} else if id == 0 {
+		return -1, errors.New("report not found")
+	}
+	return id, nil
 }
 
 func insertIP(ipdata IPData, uid int) (IPid int, reportID int, err error) {
