@@ -66,16 +66,18 @@ func insertIPs2(token string, ipdatas []IPData, starttime int64) int {
 
 func insertBatch(batch map[int][]int, reportID, port int, startTime int64) {
 	fmt.Println(port, batch)
+	values := ""
 	for _, b := range batch {
 		scanCount := len(b)
 		if scanCount == 0 {
 			continue
 		}
-		err := execDB("INSERT INTO ReportPorts (reportID, port, count, scanDate) VALUES(?,?,?,FROM_UNIXTIME(?))",
-			reportID, port, scanCount, startTime+int64(min(b)))
-		if err != nil {
-			LogCritical("Couldn't insert ReportPort: " + err.Error())
-		}
+		values += "(" + strconv.Itoa(reportID) + "," + strconv.Itoa(port) + "," + strconv.Itoa(scanCount) + ",FROM_UNIXTIME(" + strconv.FormatInt(startTime+int64(min(b)), 10) + ")),"
+	}
+
+	err := execDB("INSERT INTO ReportPorts (reportID, port, count, scanDate) VALUES" + values[:len(values)-1])
+	if err != nil {
+		LogCritical("Couldn't insert ReportPort: " + err.Error())
 	}
 }
 
