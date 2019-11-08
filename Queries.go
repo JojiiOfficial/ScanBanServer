@@ -162,11 +162,18 @@ func insertIP(ipdata IPData, uid int) (IPid int, reportID int, err error) {
 		reportID = c.ID
 		return
 	}
+	var ce int
+	err = queryRow(&ce, "SELECT COUNT(*) FROM BlockedIP WHERE ip=?", ipdata.IP)
+	if err != nil {
+		return
+	}
 	err = execDB("INSERT INTO BlockedIP (ip, validated) VALUES (?,0) ON DUPLICATE KEY UPDATE reportCount=reportCount+1, deleted=0", ipdata.IP)
 	if err != nil {
 		return
 	}
-	doAnalytics(ipdata)
+	if ce == 0 {
+		doAnalytics(ipdata)
+	}
 	err = queryRow(&IPid, "SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?", ipdata.IP)
 	if err != nil {
 		return
