@@ -9,7 +9,7 @@ import (
 	"github.com/theckman/go-ipdata"
 )
 
-func hostnameCheck(c chan *string, ip IPset) {
+func hostnameCheck(c chan *string, ip IPData) {
 	for i := 0; i <= 1; i++ {
 		LogInfo("Lookup hostname try " + strconv.Itoa(i))
 		addr, err := net.LookupAddr(ip.IP)
@@ -23,7 +23,7 @@ func hostnameCheck(c chan *string, ip IPset) {
 	c <- &empty
 }
 
-func ipDataCheck(c chan *ipdata.IP, ip IPset) {
+func ipDataCheck(c chan *ipdata.IP, ip IPData) {
 	data, err := ipdataClient.Lookup(ip.IP)
 	if err != nil {
 		LogCritical("Error looking up ip: " + ip.IP + "  " + err.Error())
@@ -34,27 +34,25 @@ func ipDataCheck(c chan *ipdata.IP, ip IPset) {
 	c <- &data
 }
 
-func doAnalytics(ips []IPset) {
-	go (func(ips []IPset) {
+func doAnalytics(ip IPData) {
+	go (func(ip IPData) {
 		connectIPDataClient(config)
-		for _, ip := range ips {
-			cHost := make(chan *string)
-			go hostnameCheck(cHost, ip)
+		cHost := make(chan *string)
+		go hostnameCheck(cHost, ip)
 
-			if ipdataClient != nil {
-				cInf := make(chan *ipdata.IP)
-				go ipDataCheck(cInf, ip)
-				hostname, ipdata := <-cHost, <-cInf
-				if ipdata == nil {
-					updateWithHostname(hostname, ip)
-				} else {
-					updateWithIPdata(hostname, *ipdata, ip)
-				}
+		if ipdataClient != nil {
+			cInf := make(chan *ipdata.IP)
+			go ipDataCheck(cInf, ip)
+			hostname, ipdata := <-cHost, <-cInf
+			if ipdata == nil {
+				updateWithHostname(hostname, ip)
 			} else {
-				updateWithHostname(<-cHost, ip)
+				updateWithIPdata(hostname, *ipdata, ip)
 			}
+		} else {
+			updateWithHostname(<-cHost, ip)
 		}
-	})(ips)
+	})(ip)
 }
 
 func getValidHostnameKeys() []string {
@@ -98,7 +96,7 @@ func validateHostname(hostname string, validateList []string) bool {
 	return false
 }
 
-func updateWithIPdata(hostname *string, ipdata ipdata.IP, ip IPset) {
+func updateWithIPdata(hostname *string, ipdata ipdata.IP, ip IPData) {
 	if len(*hostname) == 0 {
 		hostname = nil
 	} else {
@@ -137,7 +135,7 @@ func updateWithIPdata(hostname *string, ipdata ipdata.IP, ip IPset) {
 	}
 }
 
-func updateWithHostname(hostname *string, ip IPset) {
+func updateWithHostname(hostname *string, ip IPData) {
 	if len(*hostname) == 0 {
 		hostname = nil
 	} else {

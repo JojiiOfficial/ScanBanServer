@@ -12,7 +12,12 @@ func insertIPs2(token string, ipdatas []IPData, starttime int64) int {
 	}
 
 	for _, ipdata := range ipdatas {
-		err := execDB("INSERT INTO Report (ip, reporterID) VALUES((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),?)", ipdata.IP, uid)
+		err := insertIP(ipdata, uid)
+		if err != nil {
+			LogCritical(err.Error())
+			continue
+		}
+		err = execDB("INSERT INTO Report (ip, reporterID) VALUES((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),?)", ipdata.IP, uid)
 		if err != nil {
 			LogCritical("Couldn't execute insert ip into report: " + err.Error())
 			continue
@@ -20,6 +25,23 @@ func insertIPs2(token string, ipdatas []IPData, starttime int64) int {
 	}
 
 	return 1
+}
+
+func insertIP(ipdata IPData, uid int) error {
+	var c int
+	err := queryRow(&c, "SELECT COUNT(*) FROM Report WHERE reporterID=? AND ip=ifnull((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),\"\")", uid, ipdata.IP)
+	if err != nil {
+		return err
+	}
+	if c != 0 {
+		return nil
+	}
+	err = execDB("INSERT INTO BlockedIP (ip, validated) VALUES (?,0) ON DUPLICATE KEY UPDATE reportCount=reportCount+1, deleted=0", ipdata.IP)
+	if err != nil {
+		return err
+	}
+	doAnalytics(ipdata)
+	return nil
 }
 
 func insertIPs(token, note string, ips []IPset) int {
@@ -139,7 +161,7 @@ func insertIPs(token, note string, ips []IPset) int {
 			return -2
 		}
 		LogInfo("Added " + strconv.Itoa(len(ips)) + " new IPs with note " + note + " from " + strconv.Itoa(uid))
-		doAnalytics(ips)
+		//doAnalytics(ips)
 	} else {
 		LogInfo("Reported but no new IP added")
 	}
@@ -204,6 +226,8 @@ func IsUserValid(token string) int {
 	err := queryRow(&uid, sqlCheckUserValid, token)
 	if err != nil && uid > 0 {
 		return -1
+	} else if err != nil {
+		panic(err)
 	}
 	return uid
 }
