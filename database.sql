@@ -72,6 +72,14 @@ INSERT INTO Reason (pk_id, description, minRequestCount) VALUES
 (2, 'Spammer', 5),
 (3, 'Hacker', 15);
 
+CREATE TABLE Report (
+  pk_id int(11) NOT NULL,
+  ip int(11) DEFAULT NULL,
+  reporterID int(11) DEFAULT NULL,
+  firstReport timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  lastReport timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE Reporter (
   pk_id int(10) UNSIGNED NOT NULL,
   reporterID int(10) UNSIGNED NOT NULL,
@@ -79,6 +87,14 @@ CREATE TABLE Reporter (
   ip int(10) UNSIGNED NOT NULL,
   note text,
   reportDate timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE ReportPorts (
+  pk_id int(11) NOT NULL,
+  reportID int(11) DEFAULT NULL,
+  port int(11) DEFAULT NULL,
+  count int(10) UNSIGNED DEFAULT NULL,
+  scanDate bigint(20) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `User` (
@@ -111,7 +127,13 @@ ALTER TABLE KnownHostname
 ALTER TABLE Reason
   ADD PRIMARY KEY (pk_id);
 
+ALTER TABLE Report
+  ADD PRIMARY KEY (pk_id);
+
 ALTER TABLE Reporter
+  ADD PRIMARY KEY (pk_id);
+
+ALTER TABLE ReportPorts
   ADD PRIMARY KEY (pk_id);
 
 ALTER TABLE `User`
@@ -126,8 +148,12 @@ ALTER TABLE KnownHostname
   MODIFY pk_id int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE Reason
   MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+ALTER TABLE Report
+  MODIFY pk_id int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE Reporter
   MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+ALTER TABLE ReportPorts
+  MODIFY pk_id int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `User`
   MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -47,7 +47,6 @@ func insertIPs2(token string, ipdatas []IPData, starttime int64) int {
 			LogCritical("Error updating last report: " + err.Error())
 			continue
 		}
-		//IP And report is inserted
 
 		for _, iPPort := range ipdata.Ports {
 			if len(iPPort.Times) == 0 || iPPort.Port < 1 || iPPort.Port > 65535 {
@@ -136,9 +135,9 @@ func max(intsl []int) int {
 func insertReport(ipdata IPData, uid int) (int, error) {
 	err := execDB("INSERT INTO Report (ip, reporterID) VALUES((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),?)", ipdata.IP, uid)
 	if err != nil {
-		LogCritical("Couldn't execute insert ip into report: " + err.Error())
 		return -1, err
 	}
+
 	var id int
 	err = queryRow(&id, "SELECT Report.pk_id FROM Report WHERE ip=(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?) AND reporterID=?", ipdata.IP, uid)
 	if err != nil {
