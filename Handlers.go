@@ -223,7 +223,7 @@ func handleError(err error, w http.ResponseWriter, message ErrorMessage, statusC
 
 func sendError(erre string, w http.ResponseWriter, message ErrorMessage, statusCode int) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	if statusCode == 500 {
+	if statusCode >= 500 {
 		LogCritical(erre)
 	} else {
 		LogError(erre)

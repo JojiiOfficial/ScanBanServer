@@ -9,10 +9,10 @@ import (
 	"github.com/theckman/go-ipdata"
 )
 
-func hostnameCheck(c chan *string, ip IPData) {
+func hostnameCheck(c chan *string, ip string) {
 	for i := 0; i <= 1; i++ {
 		LogInfo("Lookup hostname try " + strconv.Itoa(i))
-		addr, err := net.LookupAddr(ip.IP)
+		addr, err := net.LookupAddr(ip)
 		if err == nil && len(addr) > 0 {
 			c <- &addr[0]
 			return
@@ -23,10 +23,10 @@ func hostnameCheck(c chan *string, ip IPData) {
 	c <- &empty
 }
 
-func ipDataCheck(c chan *ipdata.IP, ip IPData) {
-	data, err := ipdataClient.Lookup(ip.IP)
+func ipDataCheck(c chan *ipdata.IP, ip string) {
+	data, err := ipdataClient.Lookup(ip)
 	if err != nil {
-		LogCritical("Error looking up ip: " + ip.IP + "  " + err.Error())
+		LogCritical("Error looking up ip: " + ip + "  " + err.Error())
 		ipdataClient = nil
 		c <- nil
 		return
@@ -34,25 +34,38 @@ func ipDataCheck(c chan *ipdata.IP, ip IPData) {
 	c <- &data
 }
 
-func doAnalytics(ip IPData) {
-	go (func(ip IPData) {
+func doAnalyticsLecacy(ips []IPset) {
+	go (func(ips []IPset) {
 		connectIPDataClient(config)
-		cHost := make(chan *string)
-		go hostnameCheck(cHost, ip)
-
-		if ipdataClient != nil {
-			cInf := make(chan *ipdata.IP)
-			go ipDataCheck(cInf, ip)
-			hostname, ipdata := <-cHost, <-cInf
-			if ipdata == nil {
-				updateWithHostname(hostname, ip)
-			} else {
-				updateWithIPdata(hostname, *ipdata, ip)
-			}
-		} else {
-			updateWithHostname(<-cHost, ip)
+		for _, ip := range ips {
+			runAnalytic(ip.IP)
 		}
+	})(ips)
+}
+
+func doAnalytics(ip IPData) {
+	connectIPDataClient(config)
+	go (func(ip IPData) {
+		runAnalytic(ip.IP)
 	})(ip)
+}
+
+func runAnalytic(ip string) {
+	cHost := make(chan *string)
+	go hostnameCheck(cHost, ip)
+
+	if ipdataClient != nil {
+		cInf := make(chan *ipdata.IP)
+		go ipDataCheck(cInf, ip)
+		hostname, ipdata := <-cHost, <-cInf
+		if ipdata == nil {
+			updateWithHostname(hostname, ip)
+		} else {
+			updateWithIPdata(hostname, *ipdata, ip)
+		}
+	} else {
+		updateWithHostname(<-cHost, ip)
+	}
 }
 
 func getValidHostnameKeys() []string {
@@ -96,11 +109,11 @@ func validateHostname(hostname string, validateList []string) bool {
 	return false
 }
 
-func updateWithIPdata(hostname *string, ipdata ipdata.IP, ip IPData) {
+func updateWithIPdata(hostname *string, ipdata ipdata.IP, ip string) {
 	if len(*hostname) == 0 {
 		hostname = nil
 	} else {
-		updateValide(*hostname, ip.IP)
+		updateValide(*hostname, ip)
 	}
 	isProxy := 0
 	if ipdata.Threat.IsAnonymous {
@@ -127,7 +140,7 @@ func updateWithIPdata(hostname *string, ipdata ipdata.IP, ip IPData) {
 		domain,
 		knownAbuser,
 		knownHacker,
-		ip.IP,
+		ip,
 	)
 
 	if err != nil {
@@ -135,13 +148,13 @@ func updateWithIPdata(hostname *string, ipdata ipdata.IP, ip IPData) {
 	}
 }
 
-func updateWithHostname(hostname *string, ip IPData) {
+func updateWithHostname(hostname *string, ip string) {
 	if len(*hostname) == 0 {
 		hostname = nil
 	} else {
-		updateValide(*hostname, ip.IP)
+		updateValide(*hostname, ip)
 	}
-	err := execDB("UPDATE BlockedIP SET Hostname=? WHERE ip=?", hostname, ip.IP)
+	err := execDB("UPDATE BlockedIP SET Hostname=? WHERE ip=?", hostname, ip)
 	if err != nil {
 		LogCritical("Error updating hostname!")
 	}

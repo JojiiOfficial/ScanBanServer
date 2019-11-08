@@ -289,7 +289,7 @@ func insertIPs(token, note string, ips []IPset) int {
 			return -2
 		}
 		LogInfo("Added " + strconv.Itoa(len(ips)) + " new IPs with note " + note + " from " + strconv.Itoa(uid))
-		//doAnalytics(ips)
+		doAnalyticsLecacy(ips)
 	} else {
 		LogInfo("Reported but no new IP added")
 	}
