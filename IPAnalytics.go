@@ -2,7 +2,6 @@ package main
 
 import (
 	"net"
-	"strconv"
 	"strings"
 	"time"
 
@@ -11,7 +10,7 @@ import (
 
 func hostnameCheck(c chan *string, ip string) {
 	for i := 0; i <= 1; i++ {
-		LogInfo("Lookup hostname try " + strconv.Itoa(i))
+		LogInfo("Lookup hostname try")
 		addr, err := net.LookupAddr(ip)
 		if err == nil && len(addr) > 0 {
 			c <- &addr[0]
