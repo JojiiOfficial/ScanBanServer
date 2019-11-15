@@ -54,13 +54,13 @@ func getOwnIP() string {
 func getDYNIP() string {
 	ip, err := ioutil.ReadFile("./dyn.ip")
 	if err != nil {
-		LogError("Couldn't use dyn.ip file! Using ip from the start")
+		LogError("Couldn't use dyn.ip file: " + err.Error())
 		return externIP
 	}
 	ipe := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(string(ip), "\n", ""), "\r", ""), " ")
 	valid, _ := isIPValid(ipe)
 	if !valid {
-		LogInfo("You got ip :" + string(ip) + "but its not valid! Using ip from the start")
+		LogInfo("You got ip \"" + string(ip) + "\" but its not valid! Using ip from the start")
 		return externIP
 	}
 	externIP = ipe
