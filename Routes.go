@@ -35,16 +35,10 @@ func NewRouter() *mux.Router {
 
 var routes = Routes{
 	Route{
-		"report",
-		"POST",
-		"/report",
-		reportIPs,
-	},
-	Route{
 		"reportv2",
 		"POST",
 		"/reportnew",
-		reportIPs2,
+		reportIPs,
 	},
 	Route{
 		"fetchUpdate",

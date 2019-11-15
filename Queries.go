@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"strconv"
-	"strings"
 )
 
 //ReportIPcount ip and count
@@ -14,7 +13,7 @@ type ReportIPcount struct {
 
 const batchSize = 30
 
-func insertIPs2(token string, ipdatas []IPData, starttime int64) int {
+func insertIPs(token string, ipdatas []IPData, starttime int64) int {
 	uid := IsUserValid(token)
 	if uid <= 0 {
 		return -1
@@ -170,131 +169,6 @@ func insertIP(ipdata IPData, uid int) (IPid int, reportID int, err error) {
 	}
 	reportID = c.ID
 	return
-}
-
-func insertIPs(token, note string, ips []IPset) int {
-	//check
-	// - user valid
-	// - user has ip already inserted
-	// - ip already in db ? update : insert
-
-	if len(ips) > 300 {
-		return -3
-	}
-
-	uid := IsUserValid(token)
-	if uid <= 0 {
-		return -1
-	}
-
-	iplist := concatIPList(ips)
-
-	ip2list := ""
-	for _, ip := range ips {
-		ip2list += "(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=\"" + ip.IP + "\"),"
-	}
-	ip2list = ip2list[:len(ip2list)-1]
-
-	sqlGetInsertedIps :=
-		"SELECT BlockedIP.ip FROM Reporter " +
-			"JOIN BlockedIP on (BlockedIP.pk_id = Reporter.ip) " +
-			"WHERE " +
-			"BlockedIP.deleted=0 " +
-			"AND " +
-			"Reporter.ip in (" + ip2list + ") " +
-			"AND " +
-			"Reporter.reporterID=?"
-
-	sqlGetWhitelisted := "SELECT ip FROM `IPwhitelist` WHERE ip in (" + iplist + ")"
-	var alreadyInsertedIps []string
-
-	err := queryRows(&alreadyInsertedIps, sqlGetWhitelisted)
-	if err != nil {
-		return -2
-	}
-
-	err = queryRows(&alreadyInsertedIps, sqlGetInsertedIps, uid)
-	if err != nil {
-		return -2
-	}
-
-	note = EscapeSpecialChars(strings.Trim(note, " "))
-
-	ownIP := getOwnIP()
-	for _, ip := range ips {
-		valid, _ := isIPValid(ip.IP)
-		isAlreadyInserted := contains(alreadyInsertedIps, ip.IP)
-		if !valid || ip.IP == ownIP || isAlreadyInserted {
-			if isAlreadyInserted && ip.Reason > 1 {
-				err := execDB(
-					"UPDATE Reporter SET reason=? WHERE ip=(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?) AND reporterID=? AND reason<?",
-					ip.Reason,
-					ip.IP,
-					uid,
-					ip.Reason,
-				)
-				if err != nil {
-					LogCritical("Update error: " + err.Error())
-				}
-			}
-			if isAlreadyInserted && len(note) > 0 {
-				err := execDB(
-					"UPDATE Reporter SET note=? WHERE note IS NULL AND ip=(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?)",
-					note,
-					ip.IP,
-				)
-				if err != nil {
-					LogCritical("Update error: " + err.Error())
-				}
-			}
-			ips = removeIP(ips, ip.IP)
-		}
-	}
-
-	if len(ips) > 0 {
-		valuesBlockedIPs := ""
-		for _, ip := range ips {
-			valuesBlockedIPs += "(\"" + ip.IP + "\"," + strconv.Itoa(ip.Valid) + "),"
-		}
-		valuesBlockedIPs = valuesBlockedIPs[:len(valuesBlockedIPs)-1]
-		sqlUpdateIps := "INSERT INTO BlockedIP (ip, validated) VALUES " + valuesBlockedIPs + " ON DUPLICATE KEY UPDATE reportCount=reportCount+1, deleted=0"
-		err = execDB(sqlUpdateIps)
-		if err != nil {
-			LogCritical("Couldn't insert into BlockedIP: " + err.Error())
-			return -2
-		}
-
-		sqlInsertReporter :=
-			"INSERT INTO Reporter (Reporter.reporterID, Reporter.ip, reason, note) VALUES "
-
-		if len(note) == 0 {
-			note = "NULL"
-		} else {
-			note = "\"" + note + "\""
-		}
-		repData := ""
-		for _, ip := range ips {
-			repData += "(" + strconv.Itoa(uid) + ",(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=\"" + ip.IP + "\")," + strconv.Itoa(ip.Reason) + ", " + note + "),"
-		}
-		err = execDB(sqlInsertReporter + repData[:len(repData)-1])
-		if err != nil {
-			LogCritical("Couldn't insert into Reporter: " + err.Error())
-			return -2
-		}
-
-		sqlUpdateUserReportCount := "UPDATE User SET reportedIPs=reportedIPs+?, lastReport=CURRENT_TIMESTAMP WHERE pk_id=?"
-		err = execDB(sqlUpdateUserReportCount, len(ips), uid)
-		if err != nil {
-			LogCritical("Couldn't update user: " + err.Error())
-			return -2
-		}
-		LogInfo("Added " + strconv.Itoa(len(ips)) + " new IPs with note " + note + " from " + strconv.Itoa(uid))
-		doAnalyticsLecacy(ips)
-	} else {
-		LogInfo("Reported but no new IP added")
-	}
-
-	return 1
 }
 
 func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {

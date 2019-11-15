@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func reportIPs2(w http.ResponseWriter, r *http.Request) {
+func reportIPs(w http.ResponseWriter, r *http.Request) {
 	var report ReportStruct
 
 	if !handleUserInput(w, r, &report) {
@@ -22,30 +22,7 @@ func reportIPs2(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ipheader := []string{"X-Forwarded-For", "X-Real-Ip", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR", "HTTP_X_FORWARDED", "HTTP_X_CLUSTER_CLIENT_IP", "HTTP_FORWARDED_FOR", "HTTP_FORWARDED", "REMOTE_ADDR"}
-	var repIP string
-	for _, header := range ipheader {
-		cip := r.Header.Get(header)
-		cip = strings.Trim(cip, " ")
-		if len(cip) > 0 {
-			repIP = cip
-			break
-		}
-	}
-	remAddr := false
-	if len(strings.Trim(repIP, " ")) == 0 {
-		repIP = r.RemoteAddr
-		remAddr = true
-	}
-	if strings.Contains(repIP, ":") {
-		repIP = repIP[:(strings.LastIndex(repIP, ":"))]
-	}
-
-	if remAddr {
-		LogInfo("Reporter: \"" + repIP + "\" (rem addr)")
-	} else {
-		LogInfo("Reporter: \"" + repIP + "\"")
-	}
+	repIP := getIPFromHTTPrequest(r)
 
 	ips := []IPData{}
 	validIPfound := false
@@ -73,90 +50,12 @@ func reportIPs2(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if validIPfound {
-		ret := insertIPs2(report.Token, ips, report.StartTime)
+		ret := insertIPs(report.Token, ips, report.StartTime)
 		handleError(sendSuccess(w, ret), w, ServerError, 500)
 	} else {
 		sendError("no valid ip found in report", w, NoValidIPFound, 422)
 		return
 	}
-}
-
-func reportIPs(w http.ResponseWriter, r *http.Request) {
-	var report ReportIPStruct
-
-	if !handleUserInput(w, r, &report) {
-		return
-	}
-
-	if isStructInvalid(report) {
-		sendError("input missing", w, WrongInputFormatError, 422)
-		return
-	}
-
-	if len(report.Token) != 64 {
-		sendError("wrong token length", w, InvalidTokenError, 422)
-		return
-	}
-
-	if len(report.Ips) == 0 {
-		sendError("No ip given", w, WrongInputFormatError, 422)
-		return
-	}
-
-	ipheader := []string{"X-Forwarded-For", "X-Real-Ip", "HTTP_CLIENT_IP", "HTTP_X_FORWARDED_FOR", "HTTP_X_FORWARDED", "HTTP_X_CLUSTER_CLIENT_IP", "HTTP_FORWARDED_FOR", "HTTP_FORWARDED", "REMOTE_ADDR"}
-	var repIP string
-	for _, header := range ipheader {
-		cip := r.Header.Get(header)
-		cip = strings.Trim(cip, " ")
-		if len(cip) > 0 {
-			repIP = cip
-			break
-		}
-	}
-	if len(strings.Trim(repIP, " ")) == 0 {
-		LogInfo("Using rem addr")
-		repIP = r.RemoteAddr
-	}
-	if strings.Contains(repIP, ":") {
-		repIP = repIP[:(strings.LastIndex(repIP, ":"))]
-	}
-
-	validFound := false
-	var validIPs []IPset
-	for _, i := range report.Ips {
-		valid, _ := isIPValid(i.IP)
-		if !isStructInvalid(i) && valid && (i.Reason > 0 && i.Reason < 4) && i.IP != repIP {
-			validFound = true
-			validIPs = append(validIPs, i)
-		}
-	}
-
-	if len(validIPs) == 0 {
-		sendError("No valid ip found", w, WrongInputFormatError, 404)
-		return
-	}
-
-	if !validFound {
-		sendError("input missing", w, WrongInputFormatError, 422)
-		return
-	}
-	note := ""
-	if report.Note != nil && len(*report.Note) > 0 {
-		note = *report.Note
-	}
-	returnCode := insertIPs(report.Token, note, validIPs)
-	resp := ""
-	if returnCode == 1 {
-		resp = "ok"
-	} else if returnCode == -1 {
-		resp = "user invalid"
-	} else if returnCode == -3 {
-		resp = "too many ips!"
-	} else {
-		resp = "server error"
-	}
-	handleError(sendSuccess(w, resp), w, ServerError, 500)
-
 }
 
 func fetchIPs(w http.ResponseWriter, r *http.Request) {
