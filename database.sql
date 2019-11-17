@@ -26,7 +26,9 @@ DELIMITER $$
 CREATE TRIGGER `Handle delete` BEFORE UPDATE ON `BlockedIP` FOR EACH ROW IF (NEW.deleted = 1) THEN
 
 SET NEW.reportCount = 0;
-DELETE FROM	Reporter WHERE Reporter.ip=NEW.pk_id;
+DELETE FROM ReportPorts WHERE ReportPorts.reportID=(SELECT pk_id FROM Report WHERE Report.ip=NEW.pk_id);
+DELETE FROM Report WHERE Report.ip=NEW.pk_id;
+
 
 ELSEIF (NEW.reportCount>1) THEN
 
@@ -80,15 +82,6 @@ CREATE TABLE Report (
   lastReport timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE Reporter (
-  pk_id int(10) UNSIGNED NOT NULL,
-  reporterID int(10) UNSIGNED NOT NULL,
-  reason tinyint(3) UNSIGNED NOT NULL,
-  ip int(10) UNSIGNED NOT NULL,
-  note text,
-  reportDate timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
 CREATE TABLE ReportPorts (
   pk_id int(11) NOT NULL,
   reportID int(11) DEFAULT NULL,
@@ -130,9 +123,6 @@ ALTER TABLE Reason
 ALTER TABLE Report
   ADD PRIMARY KEY (pk_id);
 
-ALTER TABLE Reporter
-  ADD PRIMARY KEY (pk_id);
-
 ALTER TABLE ReportPorts
   ADD PRIMARY KEY (pk_id);
 
@@ -150,8 +140,6 @@ ALTER TABLE Reason
   MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 ALTER TABLE Report
   MODIFY pk_id int(11) NOT NULL AUTO_INCREMENT;
-ALTER TABLE Reporter
-  MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 ALTER TABLE ReportPorts
   MODIFY pk_id int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE `User`

@@ -229,7 +229,7 @@ func IsUserValid(token string) int {
 	if err != nil && uid > 0 {
 		return -1
 	} else if err != nil {
-		panic(err)
+		return -1
 	}
 	return uid
 }
