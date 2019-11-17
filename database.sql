@@ -26,6 +26,7 @@ DELIMITER $$
 CREATE TRIGGER `Handle delete` BEFORE UPDATE ON `BlockedIP` FOR EACH ROW IF (NEW.deleted = 1) THEN
 
 SET NEW.reportCount = 0;
+SET NEW.lastReport=CURRENT_TIMESTAMP;
 DELETE FROM ReportPorts WHERE ReportPorts.reportID=(SELECT pk_id FROM Report WHERE Report.ip=NEW.pk_id);
 DELETE FROM Report WHERE Report.ip=NEW.pk_id;
 
