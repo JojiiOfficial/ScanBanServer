@@ -97,6 +97,32 @@ func insertBatch(batch map[int][]int, reportID, port int, startTime int64) {
 	}
 }
 
+func getIPInfo(ips []string, token string) (int, *[]IPInfoData) {
+	uid := IsUserValid(token)
+	if uid <= 0 {
+		return -1, nil
+	}
+	ipdata := []IPInfoData{}
+	for _, ip := range ips {
+		var info []ReportData
+		err := queryRows(&info, "SELECT Report.reporterID, User.username, ReportPorts.scanDate,ReportPorts.port ,ReportPorts.count FROM `Report`"+
+			"JOIN BlockedIP on (BlockedIP.pk_id = Report.ip)"+
+			"JOIN User on (User.pk_id = Report.reporterID)"+
+			"JOIN ReportPorts on (ReportPorts.reportID = Report.pk_id)"+
+			"WHERE BlockedIP.ip=?", ip)
+		if err != nil {
+			LogCritical("Error getting info: " + err.Error())
+			return 2, nil
+		}
+		ipdata = append(ipdata, IPInfoData{
+			IP:      ip,
+			Reports: info,
+		})
+	}
+
+	return 1, &ipdata
+}
+
 func min(intsl []int) int {
 	if len(intsl) == 0 {
 		return 0

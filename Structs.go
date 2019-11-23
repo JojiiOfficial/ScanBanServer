@@ -91,3 +91,24 @@ type IPList struct {
 	IP      string `db:"ip" json:"ip"`
 	Deleted int    `db:"deleted" json:"del"`
 }
+
+//IPInfoRequest request for ipinfo
+type IPInfoRequest struct {
+	Token string   `json:"t"`
+	IPs   []string `json:"ips"`
+}
+
+//IPInfoData data for IPInfo
+type IPInfoData struct {
+	IP      string       `json:"ip"`
+	Reports []ReportData `json:"reports"`
+}
+
+//ReportData data for a report
+type ReportData struct {
+	ReporterID   int    `json:"repid" db:"reporterID"`
+	ReporterName string `json:"repnm" db:"username"`
+	Time         int64  `json:"tm" db:"scanDate"`
+	Port         int    `json:"prt" db:"port"`
+	Count        int    `json:"ct" db:"count"`
+}

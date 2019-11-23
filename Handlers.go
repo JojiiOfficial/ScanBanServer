@@ -11,6 +11,58 @@ import (
 	"time"
 )
 
+func fetchIPInfo(w http.ResponseWriter, r *http.Request) {
+	var ipinforequest IPInfoRequest
+	if !handleUserInput(w, r, &ipinforequest) {
+		return
+	}
+	if isStructInvalid(ipinforequest) {
+		sendError("input missing", w, WrongInputFormatError, 422)
+		return
+	}
+	if len(ipinforequest.Token) != 64 {
+		sendError("wrong token length", w, InvalidTokenError, 422)
+		return
+	}
+
+	ips := []string{}
+	validIPfound := false
+	ownIP := getOwnIP()
+	for _, ip := range ipinforequest.IPs {
+		if valid, reas := isIPValid(ip); valid && ip != ownIP {
+			ips = append(ips, ip)
+			validIPfound = true
+		} else {
+			add := ""
+			if reas != 1 {
+				if reas == 0 {
+					add = "No valid ipv4"
+				} else if reas == -1 {
+					add = "IP is reserved"
+				}
+			} else if ip == ownIP {
+				add = "IP is servers IP"
+			}
+			LogInfo("IP \"" + ip + "\" is not valid! " + add)
+		}
+	}
+
+	if validIPfound {
+		c, data := getIPInfo(ips, ipinforequest.Token)
+		if c == -1 {
+			sendError("User invalid", w, InvalidTokenError, 422)
+			return
+		} else if c == 2 {
+			sendError("Server error", w, ServerError, 422)
+			return
+		}
+		handleError(sendSuccess(w, data), w, ServerError, 500)
+	} else {
+		sendError("no valid ip found in report", w, NoValidIPFound, 422)
+		return
+	}
+}
+
 func reportIPs(w http.ResponseWriter, r *http.Request) {
 	var report ReportStruct
 

@@ -46,4 +46,10 @@ var routes = Routes{
 		"/fetch",
 		fetchIPs,
 	},
+	Route{
+		"fetchIPInfo",
+		"POST",
+		"/ipinfo",
+		fetchIPInfo,
+	},
 }
