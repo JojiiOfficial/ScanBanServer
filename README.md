@@ -21,5 +21,12 @@ Lets assume you have 5 server but you don't want known-portscanner to scan all y
   - Alternatively you can use `./scanban run` to run the server without a service
 - Done!
 
+# User permissions
+The permission system is like filepermissions in unix:<br>
+1 - fetch IPs<br>
+2 - push IPs<br>
+4 - view reports<br>
+For example <b>7</b> = allow everything or <b>3</b> = allow Fetch & Push<br>
+
 ## Dynamic IP
 If your server has a dynamic IP address, you can create a dyn.ip file and let a cronjob update this file with your external ip. This prevents the server reporting itself after ip change. If the file is avaliable and contains a valid IP address, it will be used instead of the external ip.
