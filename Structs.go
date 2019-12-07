@@ -7,7 +7,7 @@ import "time"
 //User user in db
 type User struct {
 	Pkid        uint      `db:"pk_id"`
-	Username    string    `db:"username"`
+	MachineName string    `db:"machineName"`
 	Token       string    `db:"token"`
 	ReportedIPs uint      `db:"reportedIPs"`
 	LastReport  time.Time `db:"lastReport"`
@@ -101,7 +101,7 @@ type IPInfoData struct {
 //ReportData data for a report
 type ReportData struct {
 	ReporterID   int    `json:"repid" db:"reporterID"`
-	ReporterName string `json:"repnm" db:"username"`
+	ReporterName string `json:"repnm" db:"machineName"`
 	Time         int64  `json:"tm" db:"scanDate"`
 	Port         int    `json:"prt" db:"port"`
 	Count        int    `json:"ct" db:"count"`
