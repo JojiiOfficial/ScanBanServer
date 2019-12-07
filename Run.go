@@ -82,6 +82,11 @@ var runCMD = &cli.Command{
 		}
 
 		initDB(config)
+		dberr := isConnectedToDB()
+		if dberr != nil {
+			LogError("Couldn't connect to database: " + dberr.Error())
+			return nil
+		}
 
 		useTLS := false
 		if len(config.CertFile) > 0 {

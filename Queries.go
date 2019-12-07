@@ -266,3 +266,13 @@ func IsUserValid(token string) int {
 	}
 	return uid
 }
+
+func isConnectedToDB() error {
+	sqlCheckConnection := "SELECT COUNT(*) FROM User"
+	var count int
+	err := queryRow(&count, sqlCheckConnection)
+	if err != nil {
+		return err
+	}
+	return nil
+}
