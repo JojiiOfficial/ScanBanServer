@@ -58,15 +58,6 @@ func concatIPList(ips []IPset) string {
 	return iplist[:len(iplist)-2]
 }
 
-func ipidFromIP(ipids []IPID, ip string) *IPID {
-	for _, ipid := range ipids {
-		if ipid.IP == ip {
-			return &ipid
-		}
-	}
-	return nil
-}
-
 func contains(slice []string, item string) bool {
 	set := make(map[string]struct{}, len(slice))
 	for _, s := range slice {

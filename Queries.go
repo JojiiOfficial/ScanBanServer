@@ -7,16 +7,21 @@ import (
 
 //ReportIPcount ip and count
 type ReportIPcount struct {
-	Count int `db:"c"`
-	ID    int `db:"iid"`
+	Count uint `db:"c"`
+	ID    uint `db:"iid"`
 }
 
 const batchSize = 30
 
-func insertIPs(token string, ipdatas []IPData, starttime int64) int {
-	uid := IsUserValid(token)
-	if uid <= 0 {
+func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
+	valid, uid, permissions := IsUserValid(token)
+
+	if !valid {
 		return -1
+	}
+
+	if !canUser(permissions, PushIPs) {
+		return -3
 	}
 
 	sqlUpdateUserReportCount := "UPDATE User SET reportedIPs=reportedIPs+?, lastReport=CURRENT_TIMESTAMP WHERE pk_id=?"
@@ -33,7 +38,7 @@ func insertIPs(token string, ipdatas []IPData, starttime int64) int {
 			LogCritical("Error inserting ip: " + err.Error())
 			continue
 		}
-		if reportID == -1 {
+		if reportID == 0 {
 			reportID, err = insertReport(ipdata, uid)
 			if err != nil {
 				LogCritical("Error inserting report: " + err.Error())
@@ -68,7 +73,7 @@ func insertIPs(token string, ipdatas []IPData, starttime int64) int {
 	return 1
 }
 
-func insertBatch(batch map[int][]int, reportID, port int, startTime int64) {
+func insertBatch(batch map[int][]int, reportID uint, port int, startTime uint64) {
 	values := ""
 	for _, b := range batch {
 		scanCount := len(b)
@@ -76,7 +81,7 @@ func insertBatch(batch map[int][]int, reportID, port int, startTime int64) {
 			continue
 		}
 		var rpID int
-		err := queryRow(&rpID, "SELECT IFNULL(MAX(pk_id),-1) FROM ReportPorts WHERE scanDate >= ? AND reportID=? AND port=?", startTime-int64(batchSize), reportID, port)
+		err := queryRow(&rpID, "SELECT IFNULL(MAX(pk_id),-1) FROM ReportPorts WHERE scanDate >= ? AND reportID=? AND port=?", startTime-uint64(batchSize), reportID, port)
 		if err != nil {
 			LogCritical("Couldn't get reportPorts in current batch: " + err.Error())
 			continue
@@ -85,7 +90,7 @@ func insertBatch(batch map[int][]int, reportID, port int, startTime int64) {
 		if rpID > 0 {
 			err = execDB("UPDATE ReportPorts SET count=count+? WHERE pk_id=?", scanCount, rpID)
 		} else {
-			values += "(" + strconv.Itoa(reportID) + "," + strconv.Itoa(port) + "," + strconv.Itoa(scanCount) + "," + strconv.FormatInt(startTime, 10) + "),"
+			values += "(" + strconv.FormatUint(uint64(reportID), 10) + "," + strconv.Itoa(port) + "," + strconv.Itoa(scanCount) + "," + strconv.FormatUint(startTime, 10) + "),"
 		}
 	}
 
@@ -98,10 +103,15 @@ func insertBatch(batch map[int][]int, reportID, port int, startTime int64) {
 }
 
 func getIPInfo(ips []string, token string) (int, *[]IPInfoData) {
-	uid := IsUserValid(token)
-	if uid <= 0 {
+	valid, _, permissions := IsUserValid(token)
+	if !valid {
 		return -1, nil
 	}
+
+	if !canUser(permissions, ViewReports) {
+		return -3, nil
+	}
+
 	ipdata := []IPInfoData{}
 	for _, ip := range ips {
 		var info []ReportData
@@ -155,28 +165,28 @@ func max(intsl []int) int {
 	return ix
 }
 
-func insertReport(ipdata IPData, uid int) (int, error) {
+func insertReport(ipdata IPData, uid uint) (uint, error) {
 	err := execDB("INSERT INTO Report (ip, reporterID) VALUES((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),?)", ipdata.IP, uid)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
-	var id int
+	var id uint
 	err = queryRow(&id, "SELECT Report.pk_id FROM Report WHERE ip=(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?) AND reporterID=?", ipdata.IP, uid)
 	if err != nil {
-		return -1, err
+		return 0, err
 	} else if id == 0 {
-		return -1, errors.New("report not found")
+		return 0, errors.New("report not found")
 	}
 	return id, nil
 }
 
-func insertIP(ipdata IPData, uid int) (IPid int, reportID int, err error) {
-	IPid, reportID = -1, -1
+func insertIP(ipdata IPData, uid uint) (IPid uint, reportID uint, err error) {
+	IPid, reportID = 0, 0
 	err = nil
 
 	var c ReportIPcount
-	err = queryRow(&c, "SELECT COUNT(*) as c, ifnull(pk_id, -1)as iid FROM Report WHERE reporterID=? AND ip=ifnull((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),\"\")", uid, ipdata.IP)
+	err = queryRow(&c, "SELECT COUNT(*) as c, ifnull(pk_id, 0)as iid FROM Report WHERE reporterID=? AND ip=ifnull((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),\"\")", uid, ipdata.IP)
 	if err != nil {
 		return
 	}
@@ -205,12 +215,13 @@ func insertIP(ipdata IPData, uid int) (IPid int, reportID int, err error) {
 }
 
 func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
-	//check
-	// - user valid
-
-	uid := IsUserValid(token)
-	if uid <= 0 {
+	valid, _, permissions := IsUserValid(token)
+	if !valid {
 		return nil, -1
+	}
+
+	if !canUser(permissions, FetchIPs) {
+		return nil, -3
 	}
 
 	query :=
@@ -218,10 +229,6 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 			"FROM BlockedIP " +
 			"WHERE " +
 			"(lastReport >= FROM_UNIXTIME(?) OR firstReport >= FROM_UNIXTIME(?)) "
-
-	if filter.MinReason > 0 {
-		query += "AND (SELECT AVG(reason) FROM Reporter WHERE Reporter.ip=BlockedIP.pk_id) >= " + strconv.FormatFloat(filter.MinReason, 'f', 1, 32) + " "
-	}
 
 	if filter.MinReports > 0 {
 		query += "AND reportCount >= " + strconv.Itoa(filter.MinReports) + " "
@@ -255,16 +262,14 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 }
 
 //IsUserValid returns userid if valid or -1 if invalid
-func IsUserValid(token string) int {
-	sqlCheckUserValid := "SELECT User.pk_id FROM User WHERE token=? AND User.isValid=1"
-	var uid int
+func IsUserValid(token string) (bool, uint, int16) {
+	sqlCheckUserValid := "SELECT User.pk_id, User.permissions FROM User WHERE token=? AND User.isValid=1"
+	var uid UserPermissions
 	err := queryRow(&uid, sqlCheckUserValid, token)
-	if err != nil && uid > 0 {
-		return -1
-	} else if err != nil {
-		return -1
+	if err != nil {
+		return false, 0, 0
 	}
-	return uid
+	return true, uid.UID, uid.Permissions
 }
 
 func isConnectedToDB() error {

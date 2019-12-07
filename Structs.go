@@ -6,10 +6,10 @@ import "time"
 
 //User user in db
 type User struct {
-	Pkid        int       `db:"pk_id"`
+	Pkid        uint      `db:"pk_id"`
 	Username    string    `db:"username"`
 	Token       string    `db:"token"`
-	ReportedIPs int       `db:"reportedIPs"`
+	ReportedIPs uint      `db:"reportedIPs"`
 	LastReport  time.Time `db:"lastReport"`
 	CreatedAt   time.Time `db:"createdAt"`
 	IsValid     bool      `db:"isValid"`
@@ -20,7 +20,7 @@ type User struct {
 //ReportStruct report ips data
 type ReportStruct struct {
 	Token     string   `json:"tk"`
-	StartTime int64    `json:"st"`
+	StartTime uint64   `json:"st"`
 	IPs       []IPData `json:"ips"`
 }
 
@@ -80,12 +80,6 @@ type IPset struct {
 	Valid  int    `json:"v"`
 }
 
-//IPID a pair of an IP in db with its ID
-type IPID struct {
-	ID int    `db:"pk_id"`
-	IP string `db:"ip"`
-}
-
 //IPList a list of ips from DB
 type IPList struct {
 	IP      string `db:"ip" json:"ip"`
@@ -111,4 +105,10 @@ type ReportData struct {
 	Time         int64  `json:"tm" db:"scanDate"`
 	Port         int    `json:"prt" db:"port"`
 	Count        int    `json:"ct" db:"count"`
+}
+
+//UserPermissions permissions for user
+type UserPermissions struct {
+	UID         uint  `db:"pk_id"`
+	Permissions int16 `db:"permissions"`
 }

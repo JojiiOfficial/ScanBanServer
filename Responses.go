@@ -22,4 +22,6 @@ const (
 	BatchSizeTooLarge ErrorMessage = "BatchSize soo large!"
 	//WrongIntegerFormat integer is probably no integer
 	WrongIntegerFormat ErrorMessage = "Number is string"
+	//NoPermissionError no permission to do that
+	NoPermissionError ErrorMessage = "No Permissions"
 )

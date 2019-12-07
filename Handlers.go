@@ -55,6 +55,9 @@ func fetchIPInfo(w http.ResponseWriter, r *http.Request) {
 		} else if c == 2 {
 			sendError("Server error", w, ServerError, 422)
 			return
+		} else if c == -3 {
+			sendError("No permission", w, NoPermissionError, 403)
+			return
 		}
 		handleError(sendSuccess(w, data), w, ServerError, 500)
 	} else {
@@ -102,8 +105,18 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if validIPfound {
-		ret := insertIPs(report.Token, ips, report.StartTime)
-		handleError(sendSuccess(w, ret), w, ServerError, 500)
+		c := insertIPs(report.Token, ips, report.StartTime)
+		if c == -1 {
+			sendError("User invalid", w, InvalidTokenError, 422)
+			return
+		} else if c == 2 {
+			sendError("Server error", w, ServerError, 422)
+			return
+		} else if c == -3 {
+			sendError("No permission", w, NoPermissionError, 403)
+			return
+		}
+		handleError(sendSuccess(w, c), w, ServerError, 500)
 	} else {
 		sendError("no valid ip found in report", w, NoValidIPFound, 422)
 		return
@@ -130,6 +143,12 @@ func fetchIPs(w http.ResponseWriter, r *http.Request) {
 	ips, err := fetchIPsFromDB(fetchRequest.Token, fetchRequest.Filter)
 	if err == -1 {
 		sendError("User invalid", w, InvalidTokenError, 422)
+		return
+	} else if err == -2 {
+		sendError("Server error", w, ServerError, 422)
+		return
+	} else if err == -3 {
+		sendError("No permission", w, NoPermissionError, 403)
 		return
 	} else if err >= 0 {
 		if len(ips) == 0 {
@@ -243,6 +262,10 @@ func isEmptyValue(e reflect.Value) bool {
 			return false
 		}
 	case reflect.Struct:
+		{
+			return false
+		}
+	case reflect.Uint64:
 		{
 			return false
 		}
