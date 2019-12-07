@@ -64,17 +64,6 @@ CREATE TABLE KnownHostname (
   keyword text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE Reason (
-  pk_id int(10) UNSIGNED NOT NULL,
-  description text NOT NULL,
-  minRequestCount tinyint(3) UNSIGNED NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-INSERT INTO Reason (pk_id, description, minRequestCount) VALUES
-(1, 'Scanner', 1),
-(2, 'Spammer', 5),
-(3, 'Hacker', 15);
-
 CREATE TABLE Report (
   pk_id int(11) NOT NULL,
   ip int(10) UNSIGNED DEFAULT NULL,
@@ -90,17 +79,6 @@ CREATE TABLE ReportPorts (
   count int(10) UNSIGNED DEFAULT NULL,
   scanDate int(10) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE TABLE `User` (
-  pk_id int(10) UNSIGNED NOT NULL,
-  username text COLLATE utf8mb4_unicode_ci NOT NULL,
-  token varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
-  reportedIPs int(10) UNSIGNED NOT NULL DEFAULT '0',
-  permissions tinyint(3) UNSIGNED NOT NULL DEFAULT '2',
-  lastReport timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
-  isValid tinyint(1) NOT NULL DEFAULT '1',
-  createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 ALTER TABLE BlockedIP
@@ -119,16 +97,10 @@ ALTER TABLE IPwhitelist
 ALTER TABLE KnownHostname
   ADD PRIMARY KEY (pk_id);
 
-ALTER TABLE Reason
-  ADD PRIMARY KEY (pk_id);
-
 ALTER TABLE Report
   ADD PRIMARY KEY (pk_id);
 
 ALTER TABLE ReportPorts
-  ADD PRIMARY KEY (pk_id);
-
-ALTER TABLE `User`
   ADD PRIMARY KEY (pk_id);
 
 
@@ -138,13 +110,9 @@ ALTER TABLE IPtype
   MODIFY pk_id int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
 ALTER TABLE KnownHostname
   MODIFY pk_id int(11) NOT NULL AUTO_INCREMENT;
-ALTER TABLE Reason
-  MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 ALTER TABLE Report
   MODIFY pk_id int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE ReportPorts
-  MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
-ALTER TABLE `User`
   MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
