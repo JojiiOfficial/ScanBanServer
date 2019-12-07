@@ -24,7 +24,7 @@ func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 		return -3
 	}
 
-	sqlUpdateUserReportCount := "UPDATE User SET reportedIPs=reportedIPs+?, lastReport=CURRENT_TIMESTAMP WHERE pk_id=?"
+	sqlUpdateUserReportCount := "UPDATE Token SET reportedIPs=reportedIPs+?, lastReport=CURRENT_TIMESTAMP WHERE pk_id=?"
 	err := execDB(sqlUpdateUserReportCount, len(ipdatas), uid)
 	if err != nil {
 		LogCritical("Error updating lastReport")
@@ -115,9 +115,9 @@ func getIPInfo(ips []string, token string) (int, *[]IPInfoData) {
 	ipdata := []IPInfoData{}
 	for _, ip := range ips {
 		var info []ReportData
-		err := queryRows(&info, "SELECT Report.reporterID, User.username, ReportPorts.scanDate, ReportPorts.port, ReportPorts.count FROM `Report`"+
+		err := queryRows(&info, "SELECT Report.reporterID, Token.machineName, ReportPorts.scanDate, ReportPorts.port, ReportPorts.count FROM `Report`"+
 			"JOIN BlockedIP on (BlockedIP.pk_id = Report.ip)"+
-			"JOIN User on (User.pk_id = Report.reporterID)"+
+			"JOIN Token on (Token.pk_id = Report.reporterID)"+
 			"JOIN ReportPorts on (ReportPorts.reportID = Report.pk_id)"+
 			"WHERE BlockedIP.ip=? ORDER BY ReportPorts.scanDate ASC", ip)
 		if err != nil {
@@ -263,7 +263,7 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 
 //IsUserValid returns userid if valid or -1 if invalid
 func IsUserValid(token string) (bool, uint, int16) {
-	sqlCheckUserValid := "SELECT User.pk_id, User.permissions FROM User WHERE token=? AND User.isValid=1"
+	sqlCheckUserValid := "SELECT Token.pk_id, Token.permissions FROM Token WHERE token=? AND Token.isValid=1"
 	var uid UserPermissions
 	err := queryRow(&uid, sqlCheckUserValid, token)
 	if err != nil {
@@ -273,7 +273,7 @@ func IsUserValid(token string) (bool, uint, int16) {
 }
 
 func isConnectedToDB() error {
-	sqlCheckConnection := "SELECT COUNT(*) FROM User"
+	sqlCheckConnection := "SELECT COUNT(*) FROM Token"
 	var count int
 	err := queryRow(&count, sqlCheckConnection)
 	if err != nil {
