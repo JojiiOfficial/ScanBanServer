@@ -85,6 +85,7 @@ CREATE TABLE Token (
   machineName text COLLATE utf8mb4_unicode_ci NOT NULL,
   token varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
   reportedIPs int(10) UNSIGNED NOT NULL DEFAULT '0',
+  requests int(10) UNSIGNED NOT NULL DEFAULT '0',
   permissions tinyint(3) UNSIGNED NOT NULL DEFAULT '2',
   lastReport timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
   isValid tinyint(1) NOT NULL DEFAULT '1',

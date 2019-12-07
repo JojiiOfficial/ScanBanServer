@@ -130,6 +130,13 @@ func getIPInfo(ips []string, token string) (int, *[]IPInfoData) {
 		})
 	}
 
+	go (func() {
+		err := execDB("UPDATE Token SET requests=requests+1 WHERE token=?", token)
+		if err != nil {
+			LogError("Error updating requests count")
+		}
+	})()
+
 	return 1, &ipdata
 }
 
@@ -257,6 +264,13 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 		LogCritical("Executing fetch: " + err.Error())
 		return nil, 1
 	}
+
+	go (func() {
+		err := execDB("UPDATE Token SET requests=requests+1 WHERE token=?", token)
+		if err != nil {
+			LogError("Error updating requests count")
+		}
+	})()
 
 	return iplist, 0
 }
