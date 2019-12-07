@@ -77,18 +77,18 @@ INSERT INTO Reason (pk_id, description, minRequestCount) VALUES
 
 CREATE TABLE Report (
   pk_id int(11) NOT NULL,
-  ip int(11) DEFAULT NULL,
-  reporterID int(11) DEFAULT NULL,
+  ip int(10) UNSIGNED DEFAULT NULL,
+  reporterID int(11) UNSIGNED DEFAULT NULL,
   firstReport timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   lastReport timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE ReportPorts (
-  pk_id int(11) NOT NULL,
-  reportID int(11) DEFAULT NULL,
+  pk_id int(10) UNSIGNED NOT NULL,
+  reportID int(10) UNSIGNED DEFAULT NULL,
   port int(11) DEFAULT NULL,
   count int(10) UNSIGNED DEFAULT NULL,
-  scanDate bigint(20) UNSIGNED NOT NULL
+  scanDate int(10) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `User` (
@@ -96,9 +96,10 @@ CREATE TABLE `User` (
   username text COLLATE utf8mb4_unicode_ci NOT NULL,
   token varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
   reportedIPs int(10) UNSIGNED NOT NULL DEFAULT '0',
+  permissions tinyint(3) UNSIGNED NOT NULL DEFAULT '2',
   lastReport timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
-  createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  isValid tinyint(1) NOT NULL DEFAULT '1'
+  isValid tinyint(1) NOT NULL DEFAULT '1',
+  createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -142,7 +143,7 @@ ALTER TABLE Reason
 ALTER TABLE Report
   MODIFY pk_id int(11) NOT NULL AUTO_INCREMENT;
 ALTER TABLE ReportPorts
-  MODIFY pk_id int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 ALTER TABLE `User`
   MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
