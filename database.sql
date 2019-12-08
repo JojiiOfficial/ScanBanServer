@@ -39,6 +39,25 @@ END IF
 $$
 DELIMITER ;
 
+CREATE TABLE Filter (
+  pk_id int(10) UNSIGNED NOT NULL,
+  `key` tinytext,
+  creationDate timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE FilterPart (
+  pk_id int(10) UNSIGNED NOT NULL,
+  dest tinyint(3) UNSIGNED NOT NULL,
+  operator tinyint(3) UNSIGNED NOT NULL,
+  val text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE FilterRow (
+  pk_id int(10) UNSIGNED NOT NULL,
+  filterID int(10) UNSIGNED NOT NULL,
+  partID int(10) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IPtype (
   pk_id int(11) UNSIGNED NOT NULL,
   type varchar(10) NOT NULL,
@@ -84,6 +103,7 @@ CREATE TABLE Token (
   pk_id int(10) UNSIGNED NOT NULL,
   machineName text COLLATE utf8mb4_unicode_ci NOT NULL,
   token varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  filter int(10) UNSIGNED DEFAULT NULL,
   reportedIPs int(10) UNSIGNED NOT NULL DEFAULT '0',
   requests int(10) UNSIGNED NOT NULL DEFAULT '0',
   permissions tinyint(3) UNSIGNED NOT NULL DEFAULT '2',
@@ -97,6 +117,15 @@ ALTER TABLE BlockedIP
   ADD PRIMARY KEY (pk_id),
   ADD UNIQUE KEY ip (ip),
   ADD UNIQUE KEY pk_id (pk_id);
+
+ALTER TABLE `Filter`
+  ADD PRIMARY KEY (pk_id);
+
+ALTER TABLE FilterPart
+  ADD PRIMARY KEY (pk_id);
+
+ALTER TABLE FilterRow
+  ADD PRIMARY KEY (pk_id);
 
 ALTER TABLE IPtype
   ADD PRIMARY KEY (pk_id),
@@ -120,6 +149,12 @@ ALTER TABLE Token
 
 
 ALTER TABLE BlockedIP
+  MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+ALTER TABLE `Filter`
+  MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+ALTER TABLE FilterPart
+  MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+ALTER TABLE FilterRow
   MODIFY pk_id int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 ALTER TABLE IPtype
   MODIFY pk_id int(11) UNSIGNED NOT NULL AUTO_INCREMENT;
