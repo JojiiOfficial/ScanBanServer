@@ -83,6 +83,12 @@ CREATE TABLE KnownHostname (
   keyword text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE PublicFilter (
+  filterID int(11) NOT NULL,
+  name text NOT NULL,
+  description text NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE Report (
   pk_id int(11) NOT NULL,
   ip int(10) UNSIGNED DEFAULT NULL,
@@ -137,6 +143,11 @@ ALTER TABLE IPwhitelist
 
 ALTER TABLE KnownHostname
   ADD PRIMARY KEY (pk_id);
+
+ALTER TABLE PublicFilter
+  ADD PRIMARY KEY (filterID),
+  ADD UNIQUE KEY filterID (filterID),
+  ADD KEY filterID_2 (filterID);
 
 ALTER TABLE Report
   ADD PRIMARY KEY (pk_id);
