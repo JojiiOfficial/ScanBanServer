@@ -45,7 +45,7 @@ func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 				continue
 			}
 		}
-		err = execDB("UPDATE Report SET lastReport=CURRENT_TIMESTAMP WHERE pk_id=?", reportID)
+		err = execDB("UPDATE Report SET lastReport=(SELECT UNIX_TIMESTAMP()) WHERE pk_id=?", reportID)
 		if err != nil {
 			LogCritical("Error updating last report: " + err.Error())
 			continue
