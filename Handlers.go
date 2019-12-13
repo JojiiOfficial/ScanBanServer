@@ -152,7 +152,7 @@ func fetchIPs(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err >= 0 {
 		if len(ips) == 0 {
-			handleError(sendSuccess(w, "[]"), w, ServerError, 500)
+			handleError(sendSuccess(w, []string{}), w, ServerError, 500)
 		} else {
 			fetchresponse := FetchResponse{
 				IPs:              ips,
