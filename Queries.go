@@ -206,7 +206,7 @@ func insertIP(ipdata IPData, uid uint) (IPid uint, reportID uint, err error) {
 	if err != nil {
 		return
 	}
-	err = execDB("INSERT INTO BlockedIP (ip, validated,firstReport, lastReport) VALUES (?,0,(SELECT UNIX_TIMESTAMP(),(SELECT UNIX_TIMESTAMP())) ON DUPLICATE KEY UPDATE reportCount=reportCount+1, deleted=0, lastReport=(SELECT UNIX_TIMESTAMP())", ipdata.IP)
+	err = execDB("INSERT INTO BlockedIP (ip, validated,firstReport, lastReport) VALUES (?,0,(SELECT UNIX_TIMESTAMP()),(SELECT UNIX_TIMESTAMP())) ON DUPLICATE KEY UPDATE reportCount=reportCount+1, deleted=0, lastReport=(SELECT UNIX_TIMESTAMP())", ipdata.IP)
 	if err != nil {
 		return
 	}
