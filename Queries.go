@@ -173,7 +173,7 @@ func max(intsl []int) int {
 }
 
 func insertReport(ipdata IPData, uid uint) (uint, error) {
-	err := execDB("INSERT INTO Report (ip, reporterID) VALUES((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),?)", ipdata.IP, uid)
+	err := execDB("INSERT INTO Report (ip, reporterID, firstReport) VALUES((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),?,(SELECT UNIX_TIMESTAMP()))", ipdata.IP, uid)
 	if err != nil {
 		return 0, err
 	}
