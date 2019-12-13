@@ -116,7 +116,10 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 			sendError("No permission", w, NoPermissionError, 403)
 			return
 		}
-		handleError(sendSuccess(w, c), w, ServerError, 500)
+		handleError(sendSuccess(w, Status{
+			StatusCode:    "success",
+			StatusMessage: "success",
+		}), w, ServerError, 500)
 	} else {
 		sendError("no valid ip found in report", w, NoValidIPFound, 422)
 		return
