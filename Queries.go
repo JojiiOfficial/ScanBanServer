@@ -24,10 +24,10 @@ func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 		return -3
 	}
 
-	sqlUpdateUserReportCount := "UPDATE Token SET reportedIPs=reportedIPs+?, lastReport=CURRENT_TIMESTAMP WHERE pk_id=?"
+	sqlUpdateUserReportCount := "UPDATE Token SET reportedIPs=reportedIPs+? WHERE pk_id=?"
 	err := execDB(sqlUpdateUserReportCount, len(ipdatas), uid)
 	if err != nil {
-		LogCritical("Error updating lastReport")
+		LogCritical("Error updating token reportedIPs")
 		return -2
 	}
 
@@ -235,7 +235,7 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 		"SELECT ip,deleted " +
 			"FROM BlockedIP " +
 			"WHERE " +
-			"(lastReport >= FROM_UNIXTIME(?) OR firstReport >= FROM_UNIXTIME(?)) "
+			"(lastReport >= ? OR firstReport >= ?) "
 
 	if filter.MinReports > 0 {
 		query += "AND reportCount >= " + strconv.Itoa(filter.MinReports) + " "
