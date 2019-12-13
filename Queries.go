@@ -24,7 +24,7 @@ func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 		return -3
 	}
 
-	sqlUpdateUserReportCount := "UPDATE Token SET reportedIPs=reportedIPs+? WHERE pk_id=?"
+	sqlUpdateUserReportCount := "UPDATE Token SET reportedIPs=reportedIPs+?, lastReport=now() WHERE pk_id=?"
 	err := execDB(sqlUpdateUserReportCount, len(ipdatas), uid)
 	if err != nil {
 		LogCritical("Error updating token reportedIPs")
