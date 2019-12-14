@@ -49,6 +49,11 @@ type Status struct {
 	StatusMessage string `json:"statusMessage"`
 }
 
+//PingRequest request strct for fetching changed ips
+type PingRequest struct {
+	Token string `json:"token"`
+}
+
 //FetchRequest request strct for fetching changed ips
 type FetchRequest struct {
 	Token  string      `json:"token"`

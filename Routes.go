@@ -52,4 +52,10 @@ var routes = Routes{
 		"/ipinfo",
 		fetchIPInfo,
 	},
+	Route{
+		"ping",
+		"POST",
+		"/ping",
+		ping,
+	},
 }

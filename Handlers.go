@@ -11,6 +11,31 @@ import (
 	"time"
 )
 
+func ping(w http.ResponseWriter, r *http.Request) {
+	var pingRequest PingRequest
+
+	if !handleUserInput(w, r, &pingRequest) {
+		return
+	}
+	if isStructInvalid(pingRequest) {
+		sendError("input missing", w, WrongInputFormatError, 422)
+		return
+	}
+	if len(pingRequest.Token) != 64 {
+		sendError("wrong token length", w, InvalidTokenError, 422)
+		return
+	}
+	isValid, _, _ := IsUserValid(pingRequest.Token)
+	if isValid {
+		handleError(sendSuccess(w, Status{
+			StatusCode:    "success",
+			StatusMessage: "success",
+		}), w, ServerError, 500)
+	} else {
+		sendError("user invalid", w, InvalidTokenError, 403)
+	}
+}
+
 func fetchIPInfo(w http.ResponseWriter, r *http.Request) {
 	var ipinforequest IPInfoRequest
 	if !handleUserInput(w, r, &ipinforequest) {
