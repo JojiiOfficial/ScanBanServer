@@ -99,3 +99,19 @@ func getIPFromHTTPrequest(r *http.Request) string {
 	}
 	return repIP
 }
+
+func isInStringArray(str string, arr []string, trim bool) bool {
+	if trim {
+		str = strings.Trim(str, " ")
+	}
+	for _, s := range arr {
+		z := s
+		if trim {
+			z = strings.Trim(z, " ")
+		}
+		if z == str {
+			return true
+		}
+	}
+	return false
+}

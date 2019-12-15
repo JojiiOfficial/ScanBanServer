@@ -103,13 +103,17 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	repIP := getIPFromHTTPrequest(r)
+	var whitelisted []string
+	queryRows(&whitelisted, "SELECT ip FROM IPwhitelist")
 
 	ips := []IPData{}
 	validIPfound := false
 	ownIP := getOwnIP()
 	for _, ip := range report.IPs {
 		sIP := ip.IP
-		if valid, reas := isIPValid(sIP); valid && sIP != repIP && sIP != ownIP {
+		if isInStringArray(sIP, whitelisted, true) {
+			LogInfo("IP " + sIP + " is in whitelist")
+		} else if valid, reas := isIPValid(sIP); valid && sIP != repIP && sIP != ownIP {
 			ips = append(ips, ip)
 			validIPfound = true
 		} else {
