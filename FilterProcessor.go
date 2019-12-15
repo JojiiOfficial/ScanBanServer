@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"strings"
+	"time"
 )
 
 //Filterprocessor applies filter to IP
@@ -29,6 +31,19 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		return
 	}
 	fmt.Println("Working on: "+ipData.IP+" with ID:", ipData.IPID)
+	for _, filter := range processor.filter {
+		sqlwhere, addReportJoin, err := ipMatchFilter(ipData.IPID, filter)
+		if err != nil {
+			LogError("Error apllying filter: " + err.Error())
+			continue
+		}
+		addJoin := ""
+		if addReportJoin {
+			addJoin = " JOIN Report on BlockedIP.pk_id = Report.ip JOIN ReportPorts on Report.pk_id = ReportPorts.reportID "
+		}
+		baseSQL := "SELECT DISTINCT BlockedIP.ip FROM BlockedIP " + addJoin + "WHERE " + sqlwhere
+		fmt.Println(baseSQL)
+	}
 }
 
 func (processor *Filterprocessor) addIP(ipData IPDataResult) {
@@ -36,7 +51,48 @@ func (processor *Filterprocessor) addIP(ipData IPDataResult) {
 	processor.ipworker <- ipData
 }
 
+func ipMatchFilter(ip uint, filter Filter) (string, bool, error) {
+	sqlWhere := ""
+	hasReportPart := false
+	for _, row := range filter.Rows {
+		matchRow, hrp, err := ipMatchRow(ip, row)
+		if err != nil {
+			return "", false, err
+		}
+		sqlWhere += "(" + matchRow + ") OR"
+		if hrp {
+			hasReportPart = true
+		}
+	}
+	if strings.HasSuffix(sqlWhere, "OR") {
+		sqlWhere = sqlWhere[:len(sqlWhere)-3]
+	}
+	return sqlWhere, hasReportPart, nil
+}
+
+func ipMatchRow(ip uint, rowData FilterRow) (string, bool, error) {
+	rowSQL := ""
+	hasReportPart := false
+	for _, row := range rowData.Row {
+		part := filterPartToSQL(*row)
+		if len(part) > 0 {
+			if len(rowData.Row) > 1 {
+				part = "(" + part + ")"
+			}
+			rowSQL += part + " AND"
+			if row.Dest == 11 {
+				hasReportPart = true
+			}
+		}
+	}
+	if strings.HasSuffix(rowSQL, "AND") {
+		rowSQL = rowSQL[:len(rowSQL)-4]
+	}
+	return rowSQL, hasReportPart, nil
+}
+
 func (processor *Filterprocessor) updateCachedFilter() bool {
+	start := time.Now()
 	var parts []FilterPart
 	err := queryRows(&parts, "SELECT pk_id, dest, operator, val FROM FilterPart WHERE pk_id > ?", processor.lastFilterPartID)
 	if err != nil {
@@ -71,10 +127,10 @@ func (processor *Filterprocessor) updateCachedFilter() bool {
 			if filter.ID == row.FilterID {
 				for i, part := range processor.filterParts {
 					if part.ID == row.PartID {
-						for len(filters[fi].Row) <= int(row.RowNumber) {
-							filters[fi].Row = append(filters[fi].Row, FilterRow{})
+						for len(filters[fi].Rows) <= int(row.RowNumber) {
+							filters[fi].Rows = append(filters[fi].Rows, FilterRow{})
 						}
-						filters[fi].Row[row.RowNumber].Row = append(filters[fi].Row[row.RowNumber].Row, &(processor.filterParts[i]))
+						filters[fi].Rows[row.RowNumber].Row = append(filters[fi].Rows[row.RowNumber].Row, &(processor.filterParts[i]))
 						break
 					}
 				}
@@ -90,6 +146,7 @@ func (processor *Filterprocessor) updateCachedFilter() bool {
 	for _, filter := range filters {
 		processor.filter = append(processor.filter, filter)
 	}
+	fmt.Println(time.Now().Sub(start).String())
 
 	printDebugFilter(processor.filter)
 
@@ -99,7 +156,7 @@ func (processor *Filterprocessor) updateCachedFilter() bool {
 func printDebugFilter(filter []Filter) {
 	for _, filter := range filter {
 		fmt.Println("FilterID: ", filter.ID)
-		for i, row := range filter.Row {
+		for i, row := range filter.Rows {
 			fmt.Println("  Row", i)
 			for _, r := range row.Row {
 				fmt.Println("    ", "ID:", r.ID, "data:", r.Val, r.Operator, r.Dest)
