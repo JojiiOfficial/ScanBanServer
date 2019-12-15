@@ -82,7 +82,7 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 			}
 		}
 	}
-	fmt.Println("took ", time.Now().Sub(start).String())
+	LogInfo("Applying filter took " + time.Now().Sub(start).String())
 }
 
 func (processor *Filterprocessor) addIP(ipData IPDataResult) {
