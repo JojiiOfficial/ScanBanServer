@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -26,11 +27,11 @@ func (processor *Filterprocessor) start() {
 }
 
 func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
+	start := time.Now()
 	success := processor.updateCachedFilter()
 	if !success {
 		return
 	}
-	fmt.Println("Working on: "+ipData.IP+" with ID:", ipData.IPID)
 	for _, filter := range processor.filter {
 		sqlwhere, addReportJoin, err := ipMatchFilter(ipData.IPID, filter)
 		if err != nil {
@@ -41,13 +42,30 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		if addReportJoin {
 			addJoin = " JOIN Report on BlockedIP.pk_id = Report.ip JOIN ReportPorts on Report.pk_id = ReportPorts.reportID "
 		}
-		baseSQL := "SELECT DISTINCT BlockedIP.ip FROM BlockedIP " + addJoin + "WHERE " + sqlwhere
+		baseSQL := "SELECT count(*) FROM BlockedIP " + addJoin + "WHERE (" + sqlwhere + ") AND BlockedIP.pk_id = " + strconv.FormatUint(uint64(ipData.IPID), 10)
 		fmt.Println(baseSQL)
+		var hitFilter int
+		err = queryRow(&hitFilter, baseSQL)
+		if err != nil {
+			LogCritical("Error applying filter: " + err.Error())
+			continue
+		}
+		var alreadyInIPFilter int
+		err = queryRow(&alreadyInIPFilter, "SELECT count(*) FROM FilterIP WHERE ip=? AND filterID=?", ipData.IPID, filter.ID)
+		if err != nil {
+			LogCritical("Error checking filter: " + err.Error())
+			continue
+		}
+		if hitFilter > 0 {
+			if alreadyInIPFilter == 0 {
+				execDB("INSERT INTO FilterIP (ip, filterID, added) VALUES(?,?,(SELECT UNIX_TIMESTAMP()))", ipData.IPID, filter.ID)
+			}
+		}
 	}
+	fmt.Println("took ", time.Now().Sub(start).String())
 }
 
 func (processor *Filterprocessor) addIP(ipData IPDataResult) {
-	fmt.Println("added IP: "+ipData.IP+" with ID:", ipData.IPID)
 	processor.ipworker <- ipData
 }
 
@@ -92,7 +110,6 @@ func ipMatchRow(ip uint, rowData FilterRow) (string, bool, error) {
 }
 
 func (processor *Filterprocessor) updateCachedFilter() bool {
-	start := time.Now()
 	var parts []FilterPart
 	err := queryRows(&parts, "SELECT pk_id, dest, operator, val FROM FilterPart WHERE pk_id > ?", processor.lastFilterPartID)
 	if err != nil {
@@ -146,9 +163,6 @@ func (processor *Filterprocessor) updateCachedFilter() bool {
 	for _, filter := range filters {
 		processor.filter = append(processor.filter, filter)
 	}
-	fmt.Println(time.Now().Sub(start).String())
-
-	printDebugFilter(processor.filter)
 
 	return true
 }
