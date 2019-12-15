@@ -18,6 +18,7 @@ type Filterprocessor struct {
 }
 
 func (processor *Filterprocessor) start() {
+	processor.cleanUP()
 	processor.updateCachedFilter(true)
 	processor.ipworker = make(chan IPDataResult, 1)
 	go (func() {
@@ -25,6 +26,10 @@ func (processor *Filterprocessor) start() {
 			processor.handleIP(<-processor.ipworker)
 		}
 	})()
+}
+
+func (processor *Filterprocessor) cleanUP() {
+	execDB("DELETE FROM FilterChange")
 }
 
 func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
@@ -127,9 +132,9 @@ func ipMatchRow(ip uint, rowData FilterRow) (string, bool, error) {
 
 func (processor *Filterprocessor) updateCachedFilter(initial bool) bool {
 	if !initial {
+		var add uint
 		var delete []uint
 
-		var add uint
 		err := queryRow(&add, "SELECT COUNT(filterID) FROM FilterChange WHERE del=0")
 		if err != nil {
 			LogCritical("Error getting new filter: " + err.Error())
@@ -162,6 +167,7 @@ func (processor *Filterprocessor) updateCachedFilter(initial bool) bool {
 		if add == 0 {
 			return true
 		}
+		processor.lastFilterRowID = 0
 	}
 
 	var parts []FilterPart
@@ -188,7 +194,13 @@ func (processor *Filterprocessor) updateCachedFilter(initial bool) bool {
 	}
 
 	var rowData []FilterRowRaw
-	err = queryRows(&rowData, "SELECT pk_id, filterID, rowNumber, partID FROM FilterRow WHERE pk_id > ?", processor.lastFilterRowID)
+	if initial {
+		err = queryRows(&rowData, "SELECT pk_id, filterID, rowNumber, partID FROM FilterRow WHERE pk_id > ?", processor.lastFilterRowID)
+	} else {
+		err = queryRows(&rowData,
+			"SELECT pk_id, FilterRow.filterID, rowNumber, partID FROM FilterRow "+
+				"JOIN FilterChange on FilterChange.filterID = FilterRow.filterID WHERE FilterChange.del = 0")
+	}
 	if err != nil {
 		LogCritical("Couldn't get newest filterRows: " + err.Error())
 		return false
