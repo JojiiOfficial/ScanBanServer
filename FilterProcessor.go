@@ -38,7 +38,7 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		return
 	}
 	for _, filter := range processor.filter {
-		if len(filter.Rows) == 0 {
+		if filter.Skip {
 			continue
 		}
 		sqlwhere, addReportJoin, err := getFilterSQL(filter)
@@ -111,7 +111,7 @@ func (processor *Filterprocessor) updateCachedFilter(initial bool) bool {
 			a:
 				for i, f := range processor.filter {
 					if f.ID == del {
-						processor.filter[i] = Filter{}
+						processor.filter[i].Skip = true
 						break a
 					}
 				}
@@ -126,6 +126,17 @@ func (processor *Filterprocessor) updateCachedFilter(initial bool) bool {
 		if len(add) == 0 {
 			return true
 		}
+
+		for _, ad := range add {
+		b:
+			for i, f := range processor.filter {
+				if f.ID == ad {
+					processor.filter[i].Skip = false
+					break b
+				}
+			}
+		}
+
 		processor.lastFilterRowID = 0
 	}
 

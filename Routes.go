@@ -64,4 +64,10 @@ var routes = Routes{
 		"/inf",
 		initNewFilter,
 	},
+	Route{
+		"updateFilterCache",
+		"POST",
+		"/ufc",
+		updateFilterCache,
+	},
 }

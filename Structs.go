@@ -122,6 +122,7 @@ type UserPermissions struct {
 type Filter struct {
 	ID   uint `db:"pk_id"`
 	Rows []FilterRow
+	Skip bool
 }
 
 //FilterRow a row in filter
@@ -149,6 +150,11 @@ type FilterPart struct {
 type InitNewfilterRequest struct {
 	AuthToken string `json:"token"`
 	FilterID  uint   `json:"filterID"`
+}
+
+//UpdateFilterCacheRequest request for init new filter
+type UpdateFilterCacheRequest struct {
+	AuthToken string `json:"token"`
 }
 
 //FilterTokenCount count and filterID

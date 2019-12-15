@@ -178,7 +178,7 @@ func insertIP(ipdata IPData, uid uint) (IPid uint, reportID uint, err error) {
 		return
 	}
 	if ce == 0 {
-		//doAnalytics(ipdata)
+		doAnalytics(ipdata)
 	}
 	err = queryRow(&IPid, "SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?", ipdata.IP)
 	if err != nil {

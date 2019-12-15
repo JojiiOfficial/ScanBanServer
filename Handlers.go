@@ -210,8 +210,9 @@ func initNewFilter(w http.ResponseWriter, r *http.Request) {
 		if ifr.AuthToken == "83fab411fb34c09bb7f6563a3e36fdc67d40c81d8a77936e48df6f6ad3ff4e7c46fca610e3253211e2708910829f6842db02345e64562a86fa7c2618ede5c286" {
 			filterID := ifr.FilterID
 			filterprocessor.updateCachedFilter(false)
-			for _, filter := range filterprocessor.filter {
+			for i, filter := range filterprocessor.filter {
 				if filter.ID == filterID {
+					filterprocessor.filter[i].Skip = false
 					wheresql, addRportJoin, err := getFilterSQL(filter)
 					if err != nil {
 						LogCritical("Error getting filterWhere: " + err.Error())
@@ -235,6 +236,29 @@ func initNewFilter(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 			}
+		} else {
+			LogError("Invalid authToken for ifr")
+		}
+	} else {
+		LogInfo("Request from not localhost")
+	}
+}
+func updateFilterCache(w http.ResponseWriter, r *http.Request) {
+	repIP := getIPFromHTTPrequest(r)
+	if repIP == "127.0.0.1" || repIP == "::1" {
+		var ufr UpdateFilterCacheRequest
+
+		if !handleUserInput(w, r, &ufr) {
+			return
+		}
+
+		if isStructInvalid(ufr) {
+			sendError("input missing", w, WrongInputFormatError, 422)
+			return
+		}
+
+		if ufr.AuthToken == "83fab411fb34c09bb7f6563a3e36fdc67d40c81d8a77936e48df6f6ad3ff4e7c46fca610e3253211e2708910829f6842db02345e64562a86fa7c2618ede5c286" {
+			filterprocessor.updateCachedFilter(false)
 		}
 	}
 }
