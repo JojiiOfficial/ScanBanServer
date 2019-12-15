@@ -11,7 +11,15 @@ type ReportIPcount struct {
 	ID    uint `db:"iid"`
 }
 
+//IPDataResult result from inserted IP in database
+type IPDataResult struct {
+	IP   string
+	IPID uint
+}
+
 const batchSize = 30
+
+//---------------------------------------- INSERT report ---------------------------------------
 
 func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 	valid, uid, permissions := IsUserValid(token)
@@ -31,15 +39,23 @@ func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 		return -2
 	}
 
+	ipdataresult := []IPDataResult{}
+
 	for _, ipdata := range ipdatas {
 		ipID, reportID, err := insertIP(ipdata, uid)
-		_ = ipID
+		if ipID == 0 {
+			ipID = getIPID(ipdata.IP)
+			if ipID == 0 {
+				return -2
+			}
+		}
+
 		if err != nil {
 			LogCritical("Error inserting ip: " + err.Error())
 			continue
 		}
 		if reportID == 0 {
-			reportID, err = insertReport(ipdata, uid)
+			reportID, err = insertReport(ipID, uid)
 			if err != nil {
 				LogCritical("Error inserting report: " + err.Error())
 				continue
@@ -68,7 +84,18 @@ func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 			}
 			insertBatch(batches, reportID, iPPort.Port, starttime)
 		}
+
+		ipdataresult = append(ipdataresult, IPDataResult{
+			IP:   ipdata.IP,
+			IPID: ipID,
+		})
 	}
+
+	go (func() {
+		for _, ipdata := range ipdataresult {
+			filterprocessor.addIP(ipdata)
+		}
+	})()
 
 	return 1
 }
@@ -101,6 +128,67 @@ func insertBatch(batch map[int][]int, reportID uint, port int, startTime uint64)
 		}
 	}
 }
+
+func getIPID(ip string) uint {
+	var ipid uint
+	err := queryRow(&ipid, "SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?", ip)
+	if err != nil {
+		LogCritical("Error getting IP")
+		return 0
+	}
+	return ipid
+}
+
+func insertReport(ip uint, uid uint) (uint, error) {
+	err := execDB("INSERT INTO Report (ip, reporterID, firstReport) VALUES(?,?,(SELECT UNIX_TIMESTAMP()))", ip, uid)
+	if err != nil {
+		return 0, err
+	}
+
+	var id uint
+	err = queryRow(&id, "SELECT Report.pk_id FROM Report WHERE ip=? AND reporterID=?", ip, uid)
+	if err != nil {
+		return 0, err
+	} else if id == 0 {
+		return 0, errors.New("report not found")
+	}
+	return id, nil
+}
+
+func insertIP(ipdata IPData, uid uint) (IPid uint, reportID uint, err error) {
+	IPid, reportID = 0, 0
+	err = nil
+
+	var c ReportIPcount
+	err = queryRow(&c, "SELECT COUNT(*) as c, ifnull(pk_id, 0)as iid FROM Report WHERE reporterID=? AND ip=ifnull((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),\"\")", uid, ipdata.IP)
+	if err != nil {
+		return
+	}
+	if c.Count != 0 {
+		reportID = c.ID
+		return
+	}
+	var ce int
+	err = queryRow(&ce, "SELECT COUNT(*) FROM BlockedIP WHERE ip=?", ipdata.IP)
+	if err != nil {
+		return
+	}
+	err = execDB("INSERT INTO BlockedIP (ip, validated,firstReport, lastReport) VALUES (?,0,(SELECT UNIX_TIMESTAMP()),(SELECT UNIX_TIMESTAMP())) ON DUPLICATE KEY UPDATE reportCount=reportCount+1, deleted=0, lastReport=(SELECT UNIX_TIMESTAMP())", ipdata.IP)
+	if err != nil {
+		return
+	}
+	if ce == 0 {
+		//doAnalytics(ipdata)
+	}
+	err = queryRow(&IPid, "SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?", ipdata.IP)
+	if err != nil {
+		return
+	}
+	reportID = c.ID
+	return
+}
+
+//---------------------------------------- GET ipinfo ---------------------------------------
 
 func getIPInfo(ips []string, token string) (int, *[]IPInfoData) {
 	valid, _, permissions := IsUserValid(token)
@@ -140,87 +228,7 @@ func getIPInfo(ips []string, token string) (int, *[]IPInfoData) {
 	return 1, &ipdata
 }
 
-func min(intsl []int) int {
-	if len(intsl) == 0 {
-		return 0
-	}
-	if len(intsl) == 1 {
-		return intsl[0]
-	}
-	ix := intsl[0]
-	for _, i := range intsl {
-		if i < ix {
-			ix = i
-		}
-	}
-	return ix
-}
-
-func max(intsl []int) int {
-	if len(intsl) == 0 {
-		return 0
-	}
-	if len(intsl) == 1 {
-		return intsl[0]
-	}
-	ix := intsl[0]
-	for _, i := range intsl {
-		if i > ix {
-			ix = i
-		}
-	}
-	return ix
-}
-
-func insertReport(ipdata IPData, uid uint) (uint, error) {
-	err := execDB("INSERT INTO Report (ip, reporterID, firstReport) VALUES((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),?,(SELECT UNIX_TIMESTAMP()))", ipdata.IP, uid)
-	if err != nil {
-		return 0, err
-	}
-
-	var id uint
-	err = queryRow(&id, "SELECT Report.pk_id FROM Report WHERE ip=(SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?) AND reporterID=?", ipdata.IP, uid)
-	if err != nil {
-		return 0, err
-	} else if id == 0 {
-		return 0, errors.New("report not found")
-	}
-	return id, nil
-}
-
-func insertIP(ipdata IPData, uid uint) (IPid uint, reportID uint, err error) {
-	IPid, reportID = 0, 0
-	err = nil
-
-	var c ReportIPcount
-	err = queryRow(&c, "SELECT COUNT(*) as c, ifnull(pk_id, 0)as iid FROM Report WHERE reporterID=? AND ip=ifnull((SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?),\"\")", uid, ipdata.IP)
-	if err != nil {
-		return
-	}
-	if c.Count != 0 {
-		reportID = c.ID
-		return
-	}
-	var ce int
-	err = queryRow(&ce, "SELECT COUNT(*) FROM BlockedIP WHERE ip=?", ipdata.IP)
-	if err != nil {
-		return
-	}
-	err = execDB("INSERT INTO BlockedIP (ip, validated,firstReport, lastReport) VALUES (?,0,(SELECT UNIX_TIMESTAMP()),(SELECT UNIX_TIMESTAMP())) ON DUPLICATE KEY UPDATE reportCount=reportCount+1, deleted=0, lastReport=(SELECT UNIX_TIMESTAMP())", ipdata.IP)
-	if err != nil {
-		return
-	}
-	if ce == 0 {
-		doAnalytics(ipdata)
-	}
-	err = queryRow(&IPid, "SELECT BlockedIP.pk_id FROM BlockedIP WHERE BlockedIP.ip=?", ipdata.IP)
-	if err != nil {
-		return
-	}
-	reportID = c.ID
-	return
-}
-
+//---------------------------------------- Fetch IPs ---------------------------------------
 func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 	valid, _, permissions := IsUserValid(token)
 	if !valid {
@@ -236,26 +244,6 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 			"FROM BlockedIP " +
 			"WHERE " +
 			"(lastReport >= ? OR firstReport >= ?) "
-
-	if filter.MinReports > 0 {
-		query += "AND reportCount >= " + strconv.Itoa(filter.MinReports) + " "
-	}
-
-	if filter.ProxyAllowed == -1 {
-		query += "AND isProxy=0 "
-	}
-
-	if filter.Since == 0 {
-		query += "AND deleted=0 "
-	}
-
-	if filter.OnlyValidatedIPs == -1 {
-		query += "AND validated=1 "
-	}
-
-	if filter.MaxIPs > 0 {
-		query += "LIMIT " + strconv.FormatUint(uint64(filter.MaxIPs), 10)
-	}
 
 	var iplist []IPList
 	err := queryRows(&iplist, query, filter.Since, filter.Since)
@@ -294,4 +282,36 @@ func isConnectedToDB() error {
 		return err
 	}
 	return nil
+}
+
+func min(intsl []int) int {
+	if len(intsl) == 0 {
+		return 0
+	}
+	if len(intsl) == 1 {
+		return intsl[0]
+	}
+	ix := intsl[0]
+	for _, i := range intsl {
+		if i < ix {
+			ix = i
+		}
+	}
+	return ix
+}
+
+func max(intsl []int) int {
+	if len(intsl) == 0 {
+		return 0
+	}
+	if len(intsl) == 1 {
+		return intsl[0]
+	}
+	ix := intsl[0]
+	for _, i := range intsl {
+		if i > ix {
+			ix = i
+		}
+	}
+	return ix
 }

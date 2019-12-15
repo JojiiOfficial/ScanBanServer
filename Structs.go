@@ -117,3 +117,30 @@ type UserPermissions struct {
 	UID         uint  `db:"pk_id"`
 	Permissions int16 `db:"permissions"`
 }
+
+//Filter a filterobject from database
+type Filter struct {
+	ID  uint `db:"pk_id"`
+	Row []FilterRow
+}
+
+//FilterRow a row in filter
+type FilterRow struct {
+	Row []*FilterPart
+}
+
+//FilterRowRaw raw row data from db
+type FilterRowRaw struct {
+	ID        uint  `db:"pk_id"`
+	FilterID  uint  `db:"filterID"`
+	RowNumber uint8 `db:"rowNumber"`
+	PartID    uint  `db:"partID"`
+}
+
+//FilterPart part of a filter
+type FilterPart struct {
+	ID       uint   `db:"pk_id"`
+	Dest     uint8  `db:"dest"`
+	Operator uint8  `db:"operator"`
+	Val      string `db:"val"`
+}
