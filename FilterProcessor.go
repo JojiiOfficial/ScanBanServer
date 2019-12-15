@@ -67,17 +67,14 @@ func (processor *Filterprocessor) updateCachedFilter() bool {
 		return false
 	}
 	for _, row := range rowData {
-		for _, filter := range filters {
+		for fi, filter := range filters {
 			if filter.ID == row.FilterID {
 				for i, part := range processor.filterParts {
 					if part.ID == row.PartID {
-						for len(filters) <= i {
-							filters = append(filters, Filter{})
+						for len(filters[fi].Row) <= int(row.RowNumber) {
+							filters[fi].Row = append(filters[fi].Row, FilterRow{})
 						}
-						for len(filters[i].Row) <= int(row.RowNumber) {
-							filters[i].Row = append(filters[i].Row, FilterRow{})
-						}
-						filters[i].Row[row.RowNumber].Row = append(filters[i].Row[row.RowNumber].Row, &(processor.filterParts[i]))
+						filters[fi].Row[row.RowNumber].Row = append(filters[fi].Row[row.RowNumber].Row, &(processor.filterParts[i]))
 						break
 					}
 				}
@@ -93,6 +90,20 @@ func (processor *Filterprocessor) updateCachedFilter() bool {
 	for _, filter := range filters {
 		processor.filter = append(processor.filter, filter)
 	}
-	fmt.Println(processor.filter)
+
+	printDebugFilter(processor.filter)
+
 	return true
+}
+
+func printDebugFilter(filter []Filter) {
+	for _, filter := range filter {
+		fmt.Println("FilterID: ", filter.ID)
+		for i, row := range filter.Row {
+			fmt.Println("  Row", i)
+			for _, r := range row.Row {
+				fmt.Println("    ", "ID:", r.ID, "data:", r.Val, r.Operator, r.Dest)
+			}
+		}
+	}
 }
