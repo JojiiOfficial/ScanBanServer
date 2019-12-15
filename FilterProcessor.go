@@ -52,6 +52,7 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		}
 		baseSQL := "SELECT COUNT(BlockedIP.pk_id) FROM BlockedIP " + addJoin + "WHERE (" + sqlwhere + ") AND BlockedIP.pk_id = " + strconv.FormatUint(uint64(ipData.IPID), 10)
 		var hitFilter int
+		fmt.Println(baseSQL)
 		err = queryRow(&hitFilter, baseSQL)
 		if err != nil {
 			LogCritical("Error applying filter(" + strconv.FormatUint(uint64(filter.ID), 10) + "): " + err.Error())

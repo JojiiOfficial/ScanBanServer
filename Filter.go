@@ -76,7 +76,7 @@ func filterPartToSQL(part FilterPart) string {
 		}
 	}
 
-	if !isNumeric(val) {
+	if !isNumeric(val) && part.Operator != 5 && part.Operator != 6 {
 		val = "'" + val + "'"
 	}
 	return column + " " + operator + " (" + val + ")"
