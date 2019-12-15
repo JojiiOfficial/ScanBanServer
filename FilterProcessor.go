@@ -34,6 +34,9 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		return
 	}
 	for _, filter := range processor.filter {
+		if len(filter.Rows) == 0 {
+			continue
+		}
 		sqlwhere, addReportJoin, err := ipMatchFilter(ipData.IPID, filter)
 		if err != nil {
 			LogError("Error apllying filter: " + err.Error())
@@ -124,16 +127,43 @@ func ipMatchRow(ip uint, rowData FilterRow) (string, bool, error) {
 
 func (processor *Filterprocessor) updateCachedFilter(initial bool) bool {
 	if !initial {
-		var count int
-		err := queryRow(&count, "SELECT COUNT(pk_id) FROM FilterNew")
+		var delete []uint
+
+		var add uint
+		err := queryRow(&add, "SELECT COUNT(filterID) FROM FilterChange WHERE del=0")
 		if err != nil {
-			LogCritical("Error getting count of new filter: " + err.Error())
+			LogCritical("Error getting new filter: " + err.Error())
 			return false
 		}
-		if count == 0 {
+
+		err = queryRows(&delete, "SELECT filterID FROM FilterChange WHERE del=1")
+		if err != nil {
+			LogCritical("Error getting filterdeletions" + err.Error())
+			return false
+		}
+
+		if len(delete) > 0 {
+			for _, del := range delete {
+			a:
+				for i, f := range processor.filter {
+					if f.ID == del {
+						processor.filter[i] = Filter{}
+						break a
+					}
+				}
+			}
+			if add == 0 {
+				go (func() {
+					execDB("DELETE FROM FilterChange")
+				})()
+			}
+		}
+
+		if add == 0 {
 			return true
 		}
 	}
+
 	var parts []FilterPart
 	err := queryRows(&parts, "SELECT pk_id, dest, operator, val FROM FilterPart WHERE pk_id > ?", processor.lastFilterPartID)
 	if err != nil {
@@ -189,7 +219,7 @@ func (processor *Filterprocessor) updateCachedFilter(initial bool) bool {
 	}
 
 	go (func() {
-		execDB("DELETE FROM FilterNew")
+		execDB("DELETE FROM FilterChange")
 	})()
 
 	return true
