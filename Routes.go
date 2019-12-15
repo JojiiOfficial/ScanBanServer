@@ -58,4 +58,10 @@ var routes = Routes{
 		"/ping",
 		ping,
 	},
+	Route{
+		"initNewFilter",
+		"POST",
+		"/inf",
+		initNewFilter,
+	},
 }

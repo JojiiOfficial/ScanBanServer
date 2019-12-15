@@ -193,6 +193,52 @@ func fetchIPs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func initNewFilter(w http.ResponseWriter, r *http.Request) {
+	repIP := getIPFromHTTPrequest(r)
+	if repIP == "127.0.0.1" || repIP == "::1" {
+		var ifr InitNewfilterRequest
+
+		if !handleUserInput(w, r, &ifr) {
+			return
+		}
+
+		if isStructInvalid(ifr) {
+			sendError("input missing", w, WrongInputFormatError, 422)
+			return
+		}
+
+		if ifr.AuthToken == "83fab411fb34c09bb7f6563a3e36fdc67d40c81d8a77936e48df6f6ad3ff4e7c46fca610e3253211e2708910829f6842db02345e64562a86fa7c2618ede5c286" {
+			filterID := ifr.FilterID
+			filterprocessor.updateCachedFilter(false)
+			for _, filter := range filterprocessor.filter {
+				if filter.ID == filterID {
+					wheresql, addRportJoin, err := getFilterSQL(filter)
+					if err != nil {
+						LogCritical("Error getting filterWhere: " + err.Error())
+						return
+					}
+					addJoin := ""
+					if addRportJoin {
+						addJoin = " JOIN Report on BlockedIP.pk_id = Report.ip JOIN ReportPorts on Report.pk_id = ReportPorts.reportID "
+					}
+					err = execDB(
+						"INSERT INTO FilterIP (ip, filterID, added) "+
+							"(SELECT DISTINCT BlockedIP.pk_id, ?, (SELECT UNIX_TIMESTAMP()) FROM BlockedIP "+addJoin+" WHERE "+
+							wheresql+
+							")",
+						filterID,
+					)
+					if err != nil {
+						LogCritical("Error filtering IPs: " + err.Error())
+						return
+					}
+					break
+				}
+			}
+		}
+	}
+}
+
 func handleUserInput(w http.ResponseWriter, r *http.Request, p interface{}) bool {
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 10000))
 	if err != nil {
@@ -294,6 +340,10 @@ func isEmptyValue(e reflect.Value) bool {
 			return false
 		}
 	case reflect.Uint64:
+		{
+			return false
+		}
+	case reflect.Uint:
 		{
 			return false
 		}

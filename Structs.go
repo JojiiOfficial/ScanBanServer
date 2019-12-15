@@ -144,3 +144,15 @@ type FilterPart struct {
 	Operator uint8  `db:"operator"`
 	Val      string `db:"val"`
 }
+
+//InitNewfilterRequest request for init new filter
+type InitNewfilterRequest struct {
+	AuthToken string `json:"token"`
+	FilterID  uint   `json:"filterID"`
+}
+
+//FilterTokenCount count and filterID
+type FilterTokenCount struct {
+	FilterID    uint `db:"filter"`
+	FilterCount uint `db:"c"`
+}

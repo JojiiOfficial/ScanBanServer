@@ -1,6 +1,9 @@
 package main
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+)
 
 func operatorToSQL(operator uint8) string {
 	switch operator {
@@ -82,4 +85,44 @@ func filterPartToSQL(part FilterPart) string {
 func isNumeric(s string) bool {
 	_, err := strconv.ParseFloat(s, 64)
 	return err == nil
+}
+
+func getFilterSQL(filter Filter) (string, bool, error) {
+	sqlWhere := ""
+	hasReportPart := false
+	for _, row := range filter.Rows {
+		matchRow, hrp, err := getFilterRowSQL(row)
+		if err != nil {
+			return "", false, err
+		}
+		sqlWhere += "(" + matchRow + ") OR"
+		if hrp {
+			hasReportPart = true
+		}
+	}
+	if strings.HasSuffix(sqlWhere, "OR") {
+		sqlWhere = sqlWhere[:len(sqlWhere)-3]
+	}
+	return sqlWhere, hasReportPart, nil
+}
+
+func getFilterRowSQL(rowData FilterRow) (string, bool, error) {
+	rowSQL := ""
+	hasReportPart := false
+	for _, row := range rowData.Row {
+		part := filterPartToSQL(*row)
+		if len(part) > 0 {
+			if len(rowData.Row) > 1 {
+				part = "(" + part + ")"
+			}
+			rowSQL += part + " AND"
+			if row.Dest == 11 {
+				hasReportPart = true
+			}
+		}
+	}
+	if strings.HasSuffix(rowSQL, "AND") {
+		rowSQL = rowSQL[:len(rowSQL)-4]
+	}
+	return rowSQL, hasReportPart, nil
 }

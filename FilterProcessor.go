@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -42,7 +41,7 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		if len(filter.Rows) == 0 {
 			continue
 		}
-		sqlwhere, addReportJoin, err := ipMatchFilter(ipData.IPID, filter)
+		sqlwhere, addReportJoin, err := getFilterSQL(filter)
 		if err != nil {
 			LogError("Error apllying filter: " + err.Error())
 			continue
@@ -90,52 +89,12 @@ func (processor *Filterprocessor) addIP(ipData IPDataResult) {
 	processor.ipworker <- ipData
 }
 
-func ipMatchFilter(ip uint, filter Filter) (string, bool, error) {
-	sqlWhere := ""
-	hasReportPart := false
-	for _, row := range filter.Rows {
-		matchRow, hrp, err := ipMatchRow(ip, row)
-		if err != nil {
-			return "", false, err
-		}
-		sqlWhere += "(" + matchRow + ") OR"
-		if hrp {
-			hasReportPart = true
-		}
-	}
-	if strings.HasSuffix(sqlWhere, "OR") {
-		sqlWhere = sqlWhere[:len(sqlWhere)-3]
-	}
-	return sqlWhere, hasReportPart, nil
-}
-
-func ipMatchRow(ip uint, rowData FilterRow) (string, bool, error) {
-	rowSQL := ""
-	hasReportPart := false
-	for _, row := range rowData.Row {
-		part := filterPartToSQL(*row)
-		if len(part) > 0 {
-			if len(rowData.Row) > 1 {
-				part = "(" + part + ")"
-			}
-			rowSQL += part + " AND"
-			if row.Dest == 11 {
-				hasReportPart = true
-			}
-		}
-	}
-	if strings.HasSuffix(rowSQL, "AND") {
-		rowSQL = rowSQL[:len(rowSQL)-4]
-	}
-	return rowSQL, hasReportPart, nil
-}
-
 func (processor *Filterprocessor) updateCachedFilter(initial bool) bool {
 	if !initial {
-		var add uint
+		var add []uint
 		var delete []uint
 
-		err := queryRow(&add, "SELECT COUNT(filterID) FROM FilterChange WHERE del=0")
+		err := queryRows(&add, "SELECT filterID FROM FilterChange WHERE del=0")
 		if err != nil {
 			LogCritical("Error getting new filter: " + err.Error())
 			return false
@@ -157,14 +116,14 @@ func (processor *Filterprocessor) updateCachedFilter(initial bool) bool {
 					}
 				}
 			}
-			if add == 0 {
+			if len(add) == 0 {
 				go (func() {
 					execDB("DELETE FROM FilterChange")
 				})()
 			}
 		}
 
-		if add == 0 {
+		if len(add) == 0 {
 			return true
 		}
 		processor.lastFilterRowID = 0
