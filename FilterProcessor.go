@@ -42,23 +42,35 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		if addReportJoin {
 			addJoin = " JOIN Report on BlockedIP.pk_id = Report.ip JOIN ReportPorts on Report.pk_id = ReportPorts.reportID "
 		}
-		baseSQL := "SELECT count(*) FROM BlockedIP " + addJoin + "WHERE (" + sqlwhere + ") AND BlockedIP.pk_id = " + strconv.FormatUint(uint64(ipData.IPID), 10)
-		fmt.Println(baseSQL)
+		baseSQL := "SELECT COUNT(BlockedIP.pk_id) FROM BlockedIP " + addJoin + "WHERE (" + sqlwhere + ") AND BlockedIP.pk_id = " + strconv.FormatUint(uint64(ipData.IPID), 10)
 		var hitFilter int
 		err = queryRow(&hitFilter, baseSQL)
 		if err != nil {
-			LogCritical("Error applying filter: " + err.Error())
+			LogCritical("Error applying filter(" + strconv.FormatUint(uint64(filter.ID), 10) + "): " + err.Error())
+			fmt.Println(baseSQL)
 			continue
 		}
 		var alreadyInIPFilter int
-		err = queryRow(&alreadyInIPFilter, "SELECT count(*) FROM FilterIP WHERE ip=? AND filterID=?", ipData.IPID, filter.ID)
+		err = queryRow(&alreadyInIPFilter, "SELECT COUNT(pk_id) FROM FilterIP WHERE ip=? AND filterID=?", ipData.IPID, filter.ID)
 		if err != nil {
-			LogCritical("Error checking filter: " + err.Error())
+			LogCritical("Error checking filter" + strconv.FormatUint(uint64(filter.ID), 10) + ": " + err.Error())
+			fmt.Println(baseSQL)
 			continue
 		}
 		if hitFilter > 0 {
 			if alreadyInIPFilter == 0 {
 				execDB("INSERT INTO FilterIP (ip, filterID, added) VALUES(?,?,(SELECT UNIX_TIMESTAMP()))", ipData.IPID, filter.ID)
+			}
+		} else if hitFilter == 0 && alreadyInIPFilter > 0 {
+			err := execDB("INSERT INTO FilterDelete (ip, tokenID) (SELECT ?,Token.pk_id FROM Token WHERE Token.filter=?)", ipData.IPID, filter.ID)
+			if err != nil {
+				LogCritical("Error inserting deleted in filterdelete: " + err.Error())
+				return
+			}
+			err = execDB("DELETE FROM FilterIP WHERE ip=? AND filterID=?", ipData.IPID, filter.ID)
+			if err != nil {
+				LogCritical("Error deleting deleted from FilterIP: " + err.Error())
+				return
 			}
 		}
 	}
@@ -124,7 +136,7 @@ func (processor *Filterprocessor) updateCachedFilter() bool {
 	}
 
 	var filters []Filter
-	err = queryRows(&filters, "SELECT pk_id FROM Filter WHERE pk_id > ?", processor.lastFilterID)
+	err = queryRows(&filters, "SELECT DISTINCT Filter.pk_id FROM Filter JOIN Token on Token.filter = Filter.pk_id WHERE Filter.pk_id > ?", processor.lastFilterID)
 	if err != nil {
 		LogCritical("Couldn't get newest filter:" + err.Error())
 		return false

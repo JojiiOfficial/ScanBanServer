@@ -46,7 +46,7 @@ func destToSQL(dest uint8) string {
 	case 11:
 		return "ReportPorts.port"
 	case 12:
-		return "TODO"
+		return ""
 	default:
 		return ""
 	}
