@@ -18,6 +18,7 @@ type Filterprocessor struct {
 }
 
 func (processor *Filterprocessor) start() {
+	processor.updateCachedFilter(true)
 	processor.ipworker = make(chan IPDataResult, 1)
 	go (func() {
 		for {
@@ -28,7 +29,7 @@ func (processor *Filterprocessor) start() {
 
 func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 	start := time.Now()
-	success := processor.updateCachedFilter()
+	success := processor.updateCachedFilter(false)
 	if !success {
 		return
 	}
@@ -121,7 +122,18 @@ func ipMatchRow(ip uint, rowData FilterRow) (string, bool, error) {
 	return rowSQL, hasReportPart, nil
 }
 
-func (processor *Filterprocessor) updateCachedFilter() bool {
+func (processor *Filterprocessor) updateCachedFilter(initial bool) bool {
+	if !initial {
+		var count int
+		err := queryRow(&count, "SELECT COUNT(pk_id) FROM FilterNew")
+		if err != nil {
+			LogCritical("Error getting count of new filter: " + err.Error())
+			return false
+		}
+		if count == 0 {
+			return true
+		}
+	}
 	var parts []FilterPart
 	err := queryRows(&parts, "SELECT pk_id, dest, operator, val FROM FilterPart WHERE pk_id > ?", processor.lastFilterPartID)
 	if err != nil {
@@ -175,6 +187,10 @@ func (processor *Filterprocessor) updateCachedFilter() bool {
 	for _, filter := range filters {
 		processor.filter = append(processor.filter, filter)
 	}
+
+	go (func() {
+		execDB("DELETE FROM FilterNew")
+	})()
 
 	return true
 }
