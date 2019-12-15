@@ -199,7 +199,7 @@ func fetchIPs(w http.ResponseWriter, r *http.Request) {
 
 func initNewFilter(w http.ResponseWriter, r *http.Request) {
 	repIP := getIPFromHTTPrequest(r)
-	if repIP == "127.0.0.1" || repIP == "::1" {
+	if repIP == "127.0.0.1" || repIP == "[::1]" {
 		var ifr InitNewfilterRequest
 
 		if !handleUserInput(w, r, &ifr) {
@@ -249,7 +249,7 @@ func initNewFilter(w http.ResponseWriter, r *http.Request) {
 }
 func updateFilterCache(w http.ResponseWriter, r *http.Request) {
 	repIP := getIPFromHTTPrequest(r)
-	if repIP == "127.0.0.1" || repIP == "::1" {
+	if repIP == "127.0.0.1" || repIP == "[::1]" {
 		var ufr UpdateFilterCacheRequest
 
 		if !handleUserInput(w, r, &ufr) {
