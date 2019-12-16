@@ -43,7 +43,7 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		}
 
 		start1 := time.Now()
-		sql := "SELECT COUNT(BlockedIP.pk_id) FROM BlockedIP "
+		sql := "SELECT DISTINCT BlockedIP.pk_id FROM BlockedIP "
 		hasCache := len(filter.SqlCache)
 		if hasCache > 0 {
 			sql += filter.SqlCache
