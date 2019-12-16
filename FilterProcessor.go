@@ -65,6 +65,7 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 
 		start1 = time.Now()
 		baseSQL := sql + strconv.FormatUint(uint64(ipData.IPID), 10)
+		fmt.Println(baseSQL)
 		var hitFilter int
 		err := queryRow(&hitFilter, baseSQL)
 		if err != nil {
