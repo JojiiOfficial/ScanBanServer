@@ -146,10 +146,15 @@ type FilterPart struct {
 	Val      string `db:"val"`
 }
 
-//InitNewfilterRequest request for init new filter
-type InitNewfilterRequest struct {
-	AuthToken string `json:"token"`
-	FilterID  uint   `json:"filterID"`
+//InitNewTokenRequest request for init new filter
+type InitNewTokenRequest struct {
+	AuthToken  string `json:"Authtoken"`
+	FilterID   uint   `json:"filterID"`
+	Mode       uint8  `json:"mode"`
+	Token      string `json:"token"`
+	UID        uint   `json:"uid"`
+	Permission uint8  `json:"permission"`
+	Name       string `json:"name"`
 }
 
 //UpdateFilterCacheRequest request for init new filter

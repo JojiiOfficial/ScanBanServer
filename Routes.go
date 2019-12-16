@@ -62,7 +62,7 @@ var routes = Routes{
 		"initNewFilter",
 		"POST",
 		"/inf",
-		initNewFilter,
+		initNewToken,
 	},
 	Route{
 		"updateFilterCache",

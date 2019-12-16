@@ -197,10 +197,10 @@ func fetchIPs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func initNewFilter(w http.ResponseWriter, r *http.Request) {
+func initNewToken(w http.ResponseWriter, r *http.Request) {
 	repIP := getIPFromHTTPrequest(r)
 	if repIP == "127.0.0.1" || repIP == "[::1]" {
-		var ifr InitNewfilterRequest
+		var ifr InitNewTokenRequest
 
 		if !handleUserInput(w, r, &ifr) {
 			return
@@ -212,34 +212,80 @@ func initNewFilter(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if ifr.AuthToken == "83fab411fb34c09bb7f6563a3e36fdc67d40c81d8a77936e48df6f6ad3ff4e7c46fca610e3253211e2708910829f6842db02345e64562a86fa7c2618ede5c286" {
-			filterID := ifr.FilterID
-			filterprocessor.updateCachedFilter(false)
-			for i, filter := range filterprocessor.filter {
-				if filter.ID == filterID {
-					filterprocessor.filter[i].Skip = false
-					wheresql, addRportJoin, err := getFilterSQL(filter)
+			needNew := false
+			if ifr.Mode == 2 || ifr.Mode == 3 {
+				needNew = true
+				err := execDB("INSERT INTO Token (machineName, token, permissions, filter) VALUES(?,?,?,?)", ifr.Name, ifr.Token, ifr.Permission, ifr.FilterID)
+				if err != nil {
+					sendError("server error: "+err.Error(), w, ServerError, 500)
+					return
+				}
+				if ifr.Mode == 2 {
+					var c int
+					err = queryRow(&c, "SELECT COUNT(filter) FROM Token WHERE filter=?", ifr.FilterID)
 					if err != nil {
-						LogCritical("Error getting filterWhere: " + err.Error())
+						sendError("server error: "+err.Error(), w, ServerError, 500)
 						return
 					}
-					addJoin := ""
-					if addRportJoin {
-						addJoin = " JOIN Report on BlockedIP.pk_id = Report.ip JOIN ReportPorts on Report.pk_id = ReportPorts.reportID "
+					if c == 1 {
+						needNew = true
+					} else {
+						needNew = false
 					}
-					err = execDB(
-						"INSERT INTO FilterIP (ip, filterID, added) "+
-							"(SELECT DISTINCT BlockedIP.pk_id, ?, (SELECT UNIX_TIMESTAMP()) FROM BlockedIP "+addJoin+" WHERE "+
-							wheresql+
-							")",
-						filterID,
-					)
+				}
+				if needNew {
+					err = execDB("INSERT INTO FilterChange (del, filterID) VALUES(0,?)", ifr.FilterID)
 					if err != nil {
-						LogCritical("Error filtering IPs: " + err.Error())
+						sendError("server error: "+err.Error(), w, ServerError, 500)
 						return
 					}
-					break
+				}
+			} else if ifr.Mode == 1 {
+				err := execDB("INSERT INTO Token (machineName, token, permissions, filter) VALUES(?,?,?,NULL)", ifr.Name, ifr.Token, ifr.Permission)
+				if err != nil {
+					sendError("server error: "+err.Error(), w, ServerError, 500)
+					return
 				}
 			}
+			err := execDB("INSERT INTO UserMachines (userID, token) VALUES(?,(SELECT MAX(pk_id) FROM Token WHERE token=?))", ifr.UID, ifr.Token)
+			if err != nil {
+				sendError("server error: "+err.Error(), w, ServerError, 500)
+				return
+			}
+			if needNew {
+				filterID := ifr.FilterID
+				filterprocessor.updateCachedFilter(false)
+				for i, filter := range filterprocessor.filter {
+					if filter.ID == filterID {
+						filterprocessor.filter[i].Skip = false
+						wheresql, addRportJoin, err := getFilterSQL(filter)
+						if err != nil {
+							LogCritical("Error getting filterWhere: " + err.Error())
+							return
+						}
+						addJoin := ""
+						if addRportJoin {
+							addJoin = " JOIN Report on BlockedIP.pk_id = Report.ip JOIN ReportPorts on Report.pk_id = ReportPorts.reportID "
+						}
+						err = execDB(
+							"INSERT INTO FilterIP (ip, filterID, added) "+
+								"(SELECT DISTINCT BlockedIP.pk_id, ?, (SELECT UNIX_TIMESTAMP()) FROM BlockedIP "+addJoin+" WHERE "+
+								wheresql+
+								")",
+							filterID,
+						)
+						if err != nil {
+							LogCritical("Error filtering IPs: " + err.Error())
+							return
+						}
+						break
+					}
+				}
+			}
+			handleError(sendSuccess(w, Status{
+				StatusCode:    "success",
+				StatusMessage: "success",
+			}), w, ServerError, 500)
 		} else {
 			LogError("Invalid authToken for ifr")
 		}
@@ -372,6 +418,10 @@ func isEmptyValue(e reflect.Value) bool {
 			return false
 		}
 	case reflect.Uint:
+		{
+			return false
+		}
+	case reflect.Uint8:
 		{
 			return false
 		}
