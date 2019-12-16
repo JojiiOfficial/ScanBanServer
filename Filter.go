@@ -75,11 +75,23 @@ func filterPartToSQL(part FilterPart) string {
 			return ""
 		}
 	}
-
-	if !isNumeric(val) && part.Operator != 5 && part.Operator != 6 {
+	if part.Operator == 5 || part.Operator == 6 {
+		if part.Dest == 6 || part.Dest == 7 {
+			d := strings.Split(part.Val, ",")
+			e := ""
+			for _, s := range d {
+				e += "'" + s + "',"
+			}
+			e = e[:len(e)-1]
+			val = e
+		} else if part.Dest != 8 && part.Dest != 11 {
+			return ""
+		}
+		val = "(" + val + ")"
+	} else if !isNumeric(val) {
 		val = "'" + val + "'"
 	}
-	return column + " " + operator + " (" + val + ")"
+	return column + " " + operator + " " + val
 }
 
 func isNumeric(s string) bool {
