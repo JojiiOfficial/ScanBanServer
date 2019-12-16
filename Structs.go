@@ -123,7 +123,7 @@ type Filter struct {
 	ID       uint `db:"pk_id"`
 	Rows     []FilterRow
 	Skip     bool
-	SqlCache string
+	SQLCache string
 }
 
 //FilterRow a row in filter

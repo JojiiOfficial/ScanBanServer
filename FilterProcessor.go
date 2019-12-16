@@ -43,10 +43,10 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		}
 
 		start1 := time.Now()
-		sql := "SELECT DISTINCT BlockedIP.pk_id FROM BlockedIP "
-		hasCache := len(filter.SqlCache)
+		sql := "SELECT DISTINCT 1 FROM BlockedIP "
+		hasCache := len(filter.SQLCache)
 		if hasCache > 0 {
-			sql += filter.SqlCache
+			sql += filter.SQLCache
 		} else {
 			sqlwhere, addReportJoin, err := getFilterSQL(filter)
 			if err != nil {
@@ -59,19 +59,18 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 			}
 			scndPart := addJoin + "WHERE (" + sqlwhere + ") AND BlockedIP.pk_id = "
 			sql += scndPart
-			processor.filter[i].SqlCache = scndPart
+			processor.filter[i].SQLCache = scndPart
 		}
 		fmt.Println("Getting filterSQL took", time.Now().Sub(start1).String())
 
 		start1 = time.Now()
 		baseSQL := sql + strconv.FormatUint(uint64(ipData.IPID), 10)
 		fmt.Println(baseSQL)
-		var hitFilter int
-		err := queryRow(&hitFilter, baseSQL)
+		var hitFilterI int
+		hitFilter := true
+		err := queryRow(&hitFilterI, baseSQL)
 		if err != nil {
-			LogCritical("Error applying filter(" + strconv.FormatUint(uint64(filter.ID), 10) + "): " + err.Error())
-			fmt.Println(baseSQL)
-			continue
+			hitFilter = false
 		}
 		fmt.Println("applying filter took", time.Now().Sub(start1).String())
 		start1 = time.Now()
@@ -84,13 +83,13 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		}
 		fmt.Println("IsAlreadyInFilter took: ", time.Now().Sub(start1).String())
 
-		if hitFilter > 0 {
+		if hitFilter {
 			if alreadyInIPFilter == 0 {
 				start1 := time.Now()
 				execDB("INSERT INTO FilterIP (ip, filterID, added) VALUES(?,?,(SELECT UNIX_TIMESTAMP()))", ipData.IPID, filter.ID)
 				fmt.Println("Insert into filterIpList took: ", time.Now().Sub(start1).String())
 			}
-		} else if hitFilter == 0 && alreadyInIPFilter > 0 {
+		} else if hitFilter && alreadyInIPFilter > 0 {
 			start1 := time.Now()
 			err := execDB("INSERT INTO FilterDelete (ip, tokenID) (SELECT ?,Token.pk_id FROM Token WHERE Token.filter=?)", ipData.IPID, filter.ID)
 			if err != nil {
