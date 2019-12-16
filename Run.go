@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/mkideal/cli"
 	"github.com/theckman/go-ipdata"
@@ -116,6 +118,7 @@ var runCMD = &cli.Command{
 		}
 
 		filterprocessor.start()
+		startGraphUpdater()
 		log.Fatal(http.ListenAndServe(":8080", router))
 
 		return nil
@@ -133,4 +136,20 @@ func connectIPDataClient(config Config) {
 			ipdataClient = &ipd
 		}
 	}
+}
+
+func updateGraphCache() {
+	execDB("DELETE FROM GraphCache")
+	execDB("INSERT INTO GraphCache (graphID, time, value1, value2) (SELECT 1 as graphID, scanDate as hour,COUNT(count) as value1,sum(count) as value2 FROM ReportPorts WHERE DATE_SUB(NOW(), INTERVAL 2 DAY) < DATE(FROM_UNIXTIME(scanDate)) AND scanDate < UNIX_TIMESTAMP() GROUP BY HOUR(from_unixtime(scanDate)), DAY(FROM_UNIXTIME(scanDate)), WEEK(FROM_UNIXTIME(scanDate)), MONTH(FROM_UNIXTIME(scanDate)), YEAR(FROM_UNIXTIME(scanDate)))")
+	fmt.Println("update gc")
+}
+
+func startGraphUpdater() {
+	go (func() {
+		ticker := time.NewTicker(5 * time.Minute)
+		for {
+			updateGraphCache()
+			<-ticker.C
+		}
+	})()
 }
