@@ -37,27 +37,43 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 	if !success {
 		return
 	}
-	for _, filter := range processor.filter {
+	for i, filter := range processor.filter {
 		if filter.Skip {
 			continue
 		}
-		sqlwhere, addReportJoin, err := getFilterSQL(filter)
-		if err != nil {
-			LogError("Error apllying filter: " + err.Error())
-			continue
+
+		start1 := time.Now()
+		sql := "SELECT COUNT(BlockedIP.pk_id) FROM BlockedIP "
+		hasCache := len(filter.SqlCache)
+		if hasCache > 0 {
+			sql += filter.SqlCache
+		} else {
+			sqlwhere, addReportJoin, err := getFilterSQL(filter)
+			if err != nil {
+				LogError("Error apllying filter: " + err.Error())
+				continue
+			}
+			addJoin := ""
+			if addReportJoin {
+				addJoin = " JOIN Report on BlockedIP.pk_id = Report.ip JOIN ReportPorts on Report.pk_id = ReportPorts.reportID "
+			}
+			scndPart := addJoin + "WHERE (" + sqlwhere + ") AND BlockedIP.pk_id = "
+			sql += scndPart
+			processor.filter[i].SqlCache = scndPart
 		}
-		addJoin := ""
-		if addReportJoin {
-			addJoin = " JOIN Report on BlockedIP.pk_id = Report.ip JOIN ReportPorts on Report.pk_id = ReportPorts.reportID "
-		}
-		baseSQL := "SELECT COUNT(BlockedIP.pk_id) FROM BlockedIP " + addJoin + "WHERE (" + sqlwhere + ") AND BlockedIP.pk_id = " + strconv.FormatUint(uint64(ipData.IPID), 10)
+		fmt.Println("Getting filterSQL took", time.Now().Sub(start1).String())
+
+		start1 = time.Now()
+		baseSQL := sql + strconv.FormatUint(uint64(ipData.IPID), 10)
 		var hitFilter int
-		err = queryRow(&hitFilter, baseSQL)
+		err := queryRow(&hitFilter, baseSQL)
 		if err != nil {
 			LogCritical("Error applying filter(" + strconv.FormatUint(uint64(filter.ID), 10) + "): " + err.Error())
 			fmt.Println(baseSQL)
 			continue
 		}
+		fmt.Println("applying filter took", time.Now().Sub(start1).String())
+		start1 = time.Now()
 		var alreadyInIPFilter int
 		err = queryRow(&alreadyInIPFilter, "SELECT COUNT(pk_id) FROM FilterIP WHERE ip=? AND filterID=?", ipData.IPID, filter.ID)
 		if err != nil {
@@ -65,11 +81,16 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 			fmt.Println(baseSQL)
 			continue
 		}
+		fmt.Println("IsAlreadyInFilter took: ", time.Now().Sub(start1).String())
+
 		if hitFilter > 0 {
 			if alreadyInIPFilter == 0 {
+				start1 := time.Now()
 				execDB("INSERT INTO FilterIP (ip, filterID, added) VALUES(?,?,(SELECT UNIX_TIMESTAMP()))", ipData.IPID, filter.ID)
+				fmt.Println("Insert into filterIpList took: ", time.Now().Sub(start1).String())
 			}
 		} else if hitFilter == 0 && alreadyInIPFilter > 0 {
+			start1 := time.Now()
 			err := execDB("INSERT INTO FilterDelete (ip, tokenID) (SELECT ?,Token.pk_id FROM Token WHERE Token.filter=?)", ipData.IPID, filter.ID)
 			if err != nil {
 				LogCritical("Error inserting deleted in filterdelete: " + err.Error())
@@ -80,6 +101,7 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 				LogCritical("Error deleting deleted from FilterIP: " + err.Error())
 				return
 			}
+			fmt.Println("Deleting filterIP took: ", time.Now().Sub(start1).String())
 		}
 	}
 	LogInfo("Applying filter took " + time.Now().Sub(start).String())

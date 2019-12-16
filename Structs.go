@@ -120,9 +120,10 @@ type UserPermissions struct {
 
 //Filter a filterobject from database
 type Filter struct {
-	ID   uint `db:"pk_id"`
-	Rows []FilterRow
-	Skip bool
+	ID       uint `db:"pk_id"`
+	Rows     []FilterRow
+	Skip     bool
+	SqlCache string
 }
 
 //FilterRow a row in filter
