@@ -263,14 +263,11 @@ func initNewToken(w http.ResponseWriter, r *http.Request) {
 							LogCritical("Error getting filterWhere: " + err.Error())
 							return
 						}
-						sql := "INSERT INTO FilterIP (ip, filterID, added) "+
-								"(SELECT DISTINCT BlockedIP.pk_id, ?, (SELECT UNIX_TIMESTAMP()) FROM BlockedIP WHERE "+
-								wheresql+
-								")"
-						err = execDB(
-							sql
-							filterID,
-						)
+						sql := "INSERT INTO FilterIP (ip, filterID, added) " +
+							"(SELECT DISTINCT BlockedIP.pk_id, ?, (SELECT UNIX_TIMESTAMP()) FROM BlockedIP WHERE " +
+							wheresql +
+							")"
+						err = execDB(sql, filterID)
 						if err != nil {
 							LogError(sql)
 							LogCritical("Error filtering IPs: " + err.Error())
