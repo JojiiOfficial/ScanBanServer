@@ -43,7 +43,7 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		}
 
 		start1 := time.Now()
-		sql := "SELECT DISTINCT 1 FROM BlockedIP "
+		sql := "SELECT 1 FROM BlockedIP "
 		hasCache := len(filter.SQLCache)
 		if hasCache > 0 {
 			sql += filter.SQLCache
@@ -60,7 +60,7 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		fmt.Println("Getting filterSQL took", time.Now().Sub(start1).String())
 
 		start1 = time.Now()
-		baseSQL := sql + strconv.FormatUint(uint64(ipData.IPID), 10)
+		baseSQL := sql + strconv.FormatUint(uint64(ipData.IPID), 10) + " LIMIT 1"
 		fmt.Println(baseSQL)
 		var hitFilterI int
 		hitFilter := true
