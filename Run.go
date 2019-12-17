@@ -140,6 +140,7 @@ func connectIPDataClient(config Config) {
 func updateGraphCache() {
 	execDB("DELETE FROM GraphCache")
 	execDB("INSERT INTO GraphCache (graphID, time, value1, value2) (SELECT 1 as graphID, scanDate as hour,COUNT(count) as value1,sum(count) as value2 FROM ReportPorts WHERE DATE_SUB(NOW(), INTERVAL 2 DAY) < DATE(FROM_UNIXTIME(scanDate)) AND scanDate < UNIX_TIMESTAMP() GROUP BY HOUR(from_unixtime(scanDate)), DAY(FROM_UNIXTIME(scanDate)), WEEK(FROM_UNIXTIME(scanDate)), MONTH(FROM_UNIXTIME(scanDate)), YEAR(FROM_UNIXTIME(scanDate)))")
+	execDB("INSERT INTO GraphCache (GraphCache.graphID, GraphCache.value1, GraphCache.value2) (SELECT 2, ReportPorts.port, SUM(ReportPorts.count) as count FROM Report JOIN ReportPorts on ReportPorts.reportID = Report.pk_id GROUP BY ReportPorts.port)")
 }
 
 func startGraphUpdater() {
