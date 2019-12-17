@@ -47,7 +47,7 @@ func destToSQL(dest uint8) string {
 	case 10:
 		return "KnownHacker"
 	case 11:
-		return "ReportPorts.port"
+		return "SELECT 1 FROM IPports WHERE count>0 AND ip=BlockedIP.pk_id AND port"
 	case 12:
 		return ""
 	default:
@@ -99,28 +99,23 @@ func isNumeric(s string) bool {
 	return err == nil
 }
 
-func getFilterSQL(filter Filter) (string, bool, error) {
+func getFilterSQL(filter Filter) (string, error) {
 	sqlWhere := ""
-	hasReportPart := false
 	for _, row := range filter.Rows {
-		matchRow, hrp, err := getFilterRowSQL(row)
+		matchRow, err := getFilterRowSQL(row)
 		if err != nil {
-			return "", false, err
+			return "", err
 		}
 		sqlWhere += "(" + matchRow + ") OR"
-		if hrp {
-			hasReportPart = true
-		}
 	}
 	if strings.HasSuffix(sqlWhere, "OR") {
 		sqlWhere = sqlWhere[:len(sqlWhere)-3]
 	}
-	return sqlWhere, hasReportPart, nil
+	return sqlWhere, nil
 }
 
-func getFilterRowSQL(rowData FilterRow) (string, bool, error) {
+func getFilterRowSQL(rowData FilterRow) (string, error) {
 	rowSQL := ""
-	hasReportPart := false
 	for _, row := range rowData.Row {
 		part := filterPartToSQL(*row)
 		if len(part) > 0 {
@@ -128,13 +123,10 @@ func getFilterRowSQL(rowData FilterRow) (string, bool, error) {
 				part = "(" + part + ")"
 			}
 			rowSQL += part + " AND"
-			if row.Dest == 11 {
-				hasReportPart = true
-			}
 		}
 	}
 	if strings.HasSuffix(rowSQL, "AND") {
 		rowSQL = rowSQL[:len(rowSQL)-4]
 	}
-	return rowSQL, hasReportPart, nil
+	return rowSQL, nil
 }

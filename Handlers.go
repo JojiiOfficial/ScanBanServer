@@ -258,18 +258,14 @@ func initNewToken(w http.ResponseWriter, r *http.Request) {
 				for i, filter := range filterprocessor.filter {
 					if filter.ID == filterID {
 						filterprocessor.filter[i].Skip = false
-						wheresql, addRportJoin, err := getFilterSQL(filter)
+						wheresql, err := getFilterSQL(filter)
 						if err != nil {
 							LogCritical("Error getting filterWhere: " + err.Error())
 							return
 						}
-						addJoin := ""
-						if addRportJoin {
-							addJoin = " JOIN Report on BlockedIP.pk_id = Report.ip JOIN ReportPorts on Report.pk_id = ReportPorts.reportID "
-						}
 						err = execDB(
 							"INSERT INTO FilterIP (ip, filterID, added) "+
-								"(SELECT DISTINCT BlockedIP.pk_id, ?, (SELECT UNIX_TIMESTAMP()) FROM BlockedIP "+addJoin+" WHERE "+
+								"(SELECT DISTINCT BlockedIP.pk_id, ?, (SELECT UNIX_TIMESTAMP()) FROM BlockedIP WHERE "+
 								wheresql+
 								")",
 							filterID,
