@@ -78,26 +78,24 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		}
 		fmt.Println("IsAlreadyInFilter took: ", time.Now().Sub(start1).String())
 
-		if hitFilter {
-			if isInFilter {
-				start1 := time.Now()
-				execDB("INSERT INTO FilterIP (ip, filterID, added) VALUES(?,?,(SELECT UNIX_TIMESTAMP()))", ipData.IPID, filter.ID)
-				fmt.Println("Insert into filterIpList took: ", time.Now().Sub(start1).String())
+		go (func() {
+			if hitFilter {
+				if isInFilter {
+					execDB("INSERT INTO FilterIP (ip, filterID, added) VALUES(?,?,(SELECT UNIX_TIMESTAMP()))", ipData.IPID, filter.ID)
+				}
+			} else if hitFilter && isInFilter {
+				err := execDB("INSERT INTO FilterDelete (ip, tokenID) (SELECT ?,Token.pk_id FROM Token WHERE Token.filter=?)", ipData.IPID, filter.ID)
+				if err != nil {
+					LogCritical("Error inserting deleted in filterdelete: " + err.Error())
+					return
+				}
+				err = execDB("DELETE FROM FilterIP WHERE ip=? AND filterID=?", ipData.IPID, filter.ID)
+				if err != nil {
+					LogCritical("Error deleting deleted from FilterIP: " + err.Error())
+					return
+				}
 			}
-		} else if hitFilter && isInFilter {
-			start1 := time.Now()
-			err := execDB("INSERT INTO FilterDelete (ip, tokenID) (SELECT ?,Token.pk_id FROM Token WHERE Token.filter=?)", ipData.IPID, filter.ID)
-			if err != nil {
-				LogCritical("Error inserting deleted in filterdelete: " + err.Error())
-				return
-			}
-			err = execDB("DELETE FROM FilterIP WHERE ip=? AND filterID=?", ipData.IPID, filter.ID)
-			if err != nil {
-				LogCritical("Error deleting deleted from FilterIP: " + err.Error())
-				return
-			}
-			fmt.Println("Deleting filterIP took: ", time.Now().Sub(start1).String())
-		}
+		})()
 	}
 	LogInfo("Applying filter took " + time.Now().Sub(start).String())
 }
