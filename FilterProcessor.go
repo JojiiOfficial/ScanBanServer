@@ -71,21 +71,20 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		fmt.Println("applying filter took", time.Now().Sub(start1).String())
 		start1 = time.Now()
 		var alreadyInIPFilter int
-		err = queryRow(&alreadyInIPFilter, "SELECT COUNT(pk_id) FROM FilterIP WHERE ip=? AND filterID=?", ipData.IPID, filter.ID)
+		isInFilter := true
+		err = queryRow(&alreadyInIPFilter, "SELECT 1 FROM FilterIP WHERE ip=? AND filterID=? LIMIT 1", ipData.IPID, filter.ID)
 		if err != nil {
-			LogCritical("Error checking filter" + strconv.FormatUint(uint64(filter.ID), 10) + ": " + err.Error())
-			fmt.Println(baseSQL)
-			continue
+			isInFilter = false
 		}
 		fmt.Println("IsAlreadyInFilter took: ", time.Now().Sub(start1).String())
 
 		if hitFilter {
-			if alreadyInIPFilter == 0 {
+			if isInFilter {
 				start1 := time.Now()
 				execDB("INSERT INTO FilterIP (ip, filterID, added) VALUES(?,?,(SELECT UNIX_TIMESTAMP()))", ipData.IPID, filter.ID)
 				fmt.Println("Insert into filterIpList took: ", time.Now().Sub(start1).String())
 			}
-		} else if hitFilter && alreadyInIPFilter > 0 {
+		} else if hitFilter && isInFilter {
 			start1 := time.Now()
 			err := execDB("INSERT INTO FilterDelete (ip, tokenID) (SELECT ?,Token.pk_id FROM Token WHERE Token.filter=?)", ipData.IPID, filter.ID)
 			if err != nil {
