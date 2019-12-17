@@ -48,12 +48,12 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		if hasCache > 0 {
 			sql += filter.SQLCache
 		} else {
-			sqlwhere, err := getFilterSQL(filter)
+			sqlwhere, joinAdd, err := getFilterSQL(filter)
 			if err != nil {
 				LogError("Error apllying filter: " + err.Error())
 				continue
 			}
-			scndPart := "WHERE (" + sqlwhere + ") AND BlockedIP.pk_id = "
+			scndPart := joinAdd + " WHERE (" + sqlwhere + ") AND BlockedIP.pk_id = "
 			sql += scndPart
 			processor.filter[i].SQLCache = scndPart
 		}
