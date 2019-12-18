@@ -124,7 +124,7 @@ var runCMD = &cli.Command{
 	},
 }
 
-func connectIPDataClient(config Config) {
+func connectIPDataClient(config Config) bool {
 	if len(config.IPdataAPIKey) > 0 {
 		ipd, err := ipdata.NewClient(config.IPdataAPIKey)
 		if err != nil {
@@ -133,8 +133,10 @@ func connectIPDataClient(config Config) {
 		} else {
 			LogInfo("Successfully connected to Ipdata.co")
 			ipdataClient = &ipd
+			return true
 		}
 	}
+	return false
 }
 
 func updateGraphCache() {

@@ -32,6 +32,7 @@ func main() {
 		cli.Tree(installCMD),
 		cli.Tree(stopCMD),
 		cli.Tree(startCMD),
+		cli.Tree(fixIpdataCMD),
 	).Run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
