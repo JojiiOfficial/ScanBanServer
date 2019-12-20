@@ -32,12 +32,9 @@ func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 		return -3
 	}
 
-	sqlUpdateUserReportCount := "UPDATE Token SET reportedIPs=reportedIPs+?, lastReport=now() WHERE pk_id=?"
-	err := execDB(sqlUpdateUserReportCount, len(ipdatas), uid)
-	if err != nil {
-		LogCritical("Error updating token reportedIPs")
-		return -2
-	}
+	go (func() {
+		execDB("UPDATE Token SET reportedIPs=reportedIPs+?, lastReport=now() WHERE pk_id=?", len(ipdatas), uid)
+	})()
 
 	ipdataresult := []IPDataResult{}
 
@@ -61,11 +58,9 @@ func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 				continue
 			}
 		}
-		err = execDB("UPDATE Report SET lastReport=(SELECT UNIX_TIMESTAMP()) WHERE pk_id=?", reportID)
-		if err != nil {
-			LogCritical("Error updating last report: " + err.Error())
-			continue
-		}
+		go (func() {
+			execDB("UPDATE Report SET lastReport=(SELECT UNIX_TIMESTAMP()) WHERE pk_id=?", reportID)
+		})()
 
 		for _, iPPort := range ipdata.Ports {
 			if len(iPPort.Times) == 0 || iPPort.Port < 1 || iPPort.Port > 65535 {
@@ -115,7 +110,9 @@ func insertBatch(batch map[int][]int, reportID uint, ipportreport IPPortReport, 
 		}
 
 		if rpID > 0 {
-			err = execDB("UPDATE ReportPorts SET count=count+? WHERE pk_id=?", scanCount, rpID)
+			go (func() {
+				execDB("UPDATE ReportPorts SET count=count+? WHERE pk_id=?", scanCount, rpID)
+			})()
 		} else {
 			values += "(" + strconv.FormatUint(uint64(reportID), 10) + "," + strconv.Itoa(ipportreport.Port) + "," + strconv.Itoa(scanCount) + "," + strconv.FormatUint(startTime, 10) + "),"
 		}
@@ -125,19 +122,23 @@ func insertBatch(batch map[int][]int, reportID uint, ipportreport IPPortReport, 
 		if err != nil {
 			LogCritical("Error retrieving ipport: " + err.Error())
 		} else {
-			if c > 0 {
-				execDB("UPDATE IPports SET count=count+? WHERE ip=? AND port=?", scanCount, ipID, ipportreport.Port)
-			} else {
-				execDB("INSERT INTO IPports (ip, port, count) VALUES(?,?,?)", ipID, ipportreport.Port, scanCount)
-			}
+			go (func() {
+				if c > 0 {
+					execDB("UPDATE IPports SET count=count+? WHERE ip=? AND port=?", scanCount, ipID, ipportreport.Port)
+				} else {
+					execDB("INSERT INTO IPports (ip, port, count) VALUES(?,?,?)", ipID, ipportreport.Port, scanCount)
+				}
+			})()
 		}
 	}
 
 	if len(values) > 2 {
-		err := execDB("INSERT INTO ReportPorts (reportID, port, count, scanDate) VALUES" + values[:len(values)-1])
-		if err != nil {
-			LogCritical("Couldn't insert ReportPort: " + err.Error())
-		}
+		go (func() {
+			err := execDB("INSERT INTO ReportPorts (reportID, port, count, scanDate) VALUES" + values[:len(values)-1])
+			if err != nil {
+				LogCritical("Couldn't insert ReportPort: " + err.Error())
+			}
+		})()
 	}
 }
 

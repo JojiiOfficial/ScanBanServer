@@ -134,7 +134,9 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if validIPfound {
+		start := time.Now()
 		c := insertIPs(report.Token, ips, report.StartTime)
+		fmt.Println("Reporting took", time.Now().Sub(start).String())
 		if c == -1 {
 			sendError("User invalid", w, InvalidTokenError, 422)
 			return
