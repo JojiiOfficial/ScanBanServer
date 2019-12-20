@@ -265,7 +265,7 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 	var query string
 	if filterID == 0 {
 		query =
-			"SELECT ip,deleted AS del" +
+			"SELECT ip,deleted AS del " +
 				"FROM BlockedIP " +
 				"WHERE " +
 				"(lastReport >= ? OR firstReport >= ?) "
