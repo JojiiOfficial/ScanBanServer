@@ -49,18 +49,18 @@ func destToSQL(dest uint8) string {
 	case 11:
 		return "IPports.port"
 	case 12:
-		return "(SELECT sum(count) FROM `ReportPorts` JOIN Report on Report.pk_id = ReportPorts.reportID WHERE ip=? GROUP BY ip, MINUTE(FROM_UNIXTIME(scanDate)), DATE(FROM_UNIXTIME(scanDate)) ORDER BY SUM(count) DESC LIMIT 1)"
+		return "(SELECT SUM(count) FROM `ReportPorts` JOIN Report ON Report.pk_id = ReportPorts.reportID WHERE ip=? GROUP BY ip, MINUTE(FROM_UNIXTIME(scanDate)), DATE(FROM_UNIXTIME(scanDate)) ORDER BY SUM(count) DESC LIMIT 1)"
 	case 13:
-		return "(SELECT sum(count) FROM `ReportPorts` JOIN Report on Report.pk_id = ReportPorts.reportID WHERE ip=? GROUP BY ip, HOUR(FROM_UNIXTIME(scanDate)), DATE(FROM_UNIXTIME(scanDate)) ORDER BY SUM(count) DESC LIMIT 1)"
+		return "(SELECT SUM(count) FROM `ReportPorts` JOIN Report ON Report.pk_id = ReportPorts.reportID WHERE ip=? GROUP BY ip, HOUR(FROM_UNIXTIME(scanDate)), DATE(FROM_UNIXTIME(scanDate)) ORDER BY SUM(count) DESC LIMIT 1)"
 	default:
-		return ""
+		return "(SELECT COUNT(port) FROM `IPports` WHERE IPports.ip=?)"
 	}
 }
 
 func filterPartToSQL(part FilterPart, ip string) string {
 	operator := operatorToSQL(part.Operator)
 	column := destToSQL(part.Dest)
-	if part.Dest == 12 || part.Dest == 13 {
+	if part.Dest == 12 || part.Dest == 13 || part.Dest == 14 {
 		column = strings.ReplaceAll(column, "?", ip)
 	}
 	if len(operator) == 0 {

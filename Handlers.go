@@ -264,10 +264,11 @@ func initNewToken(w http.ResponseWriter, r *http.Request) {
 							return
 						}
 						sql := "INSERT INTO FilterIP (ip, filterID, added) " +
-							"(SELECT BlockedIP.pk_id, ?, (SELECT UNIX_TIMESTAMP()) FROM BlockedIP " + joinAdd + " WHERE " +
+							"(SELECT BlockedIP.pk_id, ?, ? FROM BlockedIP " + joinAdd + " WHERE " +
 							wheresql +
 							")"
-						err = execDB(sql, filterID)
+						fmt.Println(sql)
+						err = execDB(sql, filterID, time.Now().Unix())
 						if err != nil {
 							LogInfo(sql)
 							LogCritical("Error filtering IPs: " + err.Error())
