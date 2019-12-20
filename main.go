@@ -33,6 +33,7 @@ func main() {
 		cli.Tree(stopCMD),
 		cli.Tree(startCMD),
 		cli.Tree(fixIpdataCMD),
+		cli.Tree(databasetestCMD),
 	).Run(os.Args[1:]); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
