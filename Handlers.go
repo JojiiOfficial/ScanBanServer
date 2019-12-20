@@ -254,10 +254,10 @@ func initNewToken(w http.ResponseWriter, r *http.Request) {
 			}
 			if needNew {
 				filterID := ifr.FilterID
-				filterprocessor.updateCachedFilter(false)
-				for i, filter := range filterprocessor.filter {
+				filterbuilder.updateCachedFilter(false)
+				for i, filter := range filterbuilder.filter {
 					if filter.ID == filterID {
-						filterprocessor.filter[i].Skip = false
+						filterbuilder.filter[i].Skip = false
 						wheresql, joinAdd, err := getFilterSQL(filter, "BlockedIP.pk_id")
 						if err != nil {
 							LogCritical("Error getting filterWhere: " + err.Error())
@@ -304,7 +304,7 @@ func updateFilterCache(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if ufr.AuthToken == "83fab411fb34c09bb7f6563a3e36fdc67d40c81d8a77936e48df6f6ad3ff4e7c46fca610e3253211e2708910829f6842db02345e64562a86fa7c2618ede5c286" {
-			filterprocessor.updateCachedFilter(false)
+			filterbuilder.updateCachedFilter(false)
 		}
 	}
 }

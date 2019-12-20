@@ -20,7 +20,7 @@ type runT struct {
 
 var ipdataClient *ipdata.Client
 var config Config
-var filterprocessor Filterprocessor
+var filterbuilder FilterBuilder
 
 var runCMD = &cli.Command{
 	Name:    "run",
@@ -116,7 +116,7 @@ var runCMD = &cli.Command{
 			})()
 		}
 
-		filterprocessor.start()
+		filterbuilder.start()
 		startGraphUpdater()
 		log.Fatal(http.ListenAndServe(":8080", router))
 

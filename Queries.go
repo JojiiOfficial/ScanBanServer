@@ -93,7 +93,7 @@ func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 
 	go (func() {
 		for _, ipdata := range ipdataresult {
-			filterprocessor.addIP(ipdata)
+			filterbuilder.addIP(ipdata)
 		}
 	})()
 
