@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -51,6 +52,9 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 			sqlwhere, joinAdd, err := getFilterSQL(filter, strconv.FormatUint(uint64(ipData.IPID), 10))
 			if err != nil {
 				LogError("Error apllying filter: " + err.Error())
+				continue
+			}
+			if len(strings.Trim(sqlwhere, " ")) == 0 {
 				continue
 			}
 			scndPart := joinAdd + " WHERE (" + sqlwhere + ") AND BlockedIP.pk_id = "
@@ -212,7 +216,9 @@ func (processor *Filterprocessor) updateCachedFilter(initial bool) bool {
 
 	//Append filter to processor->filter
 	for _, filter := range filters {
-		processor.filter = append(processor.filter, filter)
+		if len(filter.Rows) > 0 &&{
+			processor.filter = append(processor.filter, filter)
+		}
 	}
 
 	go (func() {
