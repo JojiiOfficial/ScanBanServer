@@ -49,15 +49,20 @@ func destToSQL(dest uint8) string {
 	case 11:
 		return "IPports.port"
 	case 12:
-		return ""
+		return "(SELECT sum(count) FROM `ReportPorts` JOIN Report on Report.pk_id = ReportPorts.reportID WHERE ip=? GROUP BY ip, MINUTE(FROM_UNIXTIME(scanDate)), DATE(FROM_UNIXTIME(scanDate)) ORDER BY SUM(count) DESC LIMIT 1)"
+	case 13:
+		return "(SELECT sum(count) FROM `ReportPorts` JOIN Report on Report.pk_id = ReportPorts.reportID WHERE ip=? GROUP BY ip, HOUR(FROM_UNIXTIME(scanDate)), DATE(FROM_UNIXTIME(scanDate)) ORDER BY SUM(count) DESC LIMIT 1)"
 	default:
 		return ""
 	}
 }
 
-func filterPartToSQL(part FilterPart) string {
+func filterPartToSQL(part FilterPart, ip string) string {
 	operator := operatorToSQL(part.Operator)
 	column := destToSQL(part.Dest)
+	if part.Dest == 12 || part.Dest == 13 {
+		column = strings.ReplaceAll(column, "?", ip)
+	}
 	if len(operator) == 0 {
 		return ""
 	}
@@ -99,11 +104,11 @@ func isNumeric(s string) bool {
 	return err == nil
 }
 
-func getFilterSQL(filter Filter) (string, string, error) {
+func getFilterSQL(filter Filter, ip string) (string, string, error) {
 	sqlWhere := ""
 	joinAdd3 := ""
 	for _, row := range filter.Rows {
-		matchRow, joinAdd, err := getFilterRowSQL(row)
+		matchRow, joinAdd, err := getFilterRowSQL(row, ip)
 		if err != nil || len(strings.Trim(matchRow, " ")) == 0 {
 			return "", "", err
 		}
@@ -118,11 +123,11 @@ func getFilterSQL(filter Filter) (string, string, error) {
 	return sqlWhere, joinAdd3, nil
 }
 
-func getFilterRowSQL(rowData FilterRow) (string, string, error) {
+func getFilterRowSQL(rowData FilterRow, ip string) (string, string, error) {
 	rowSQL := ""
 	joinAdd := ""
 	for _, row := range rowData.Row {
-		part := filterPartToSQL(*row)
+		part := filterPartToSQL(*row, ip)
 		if len(part) > 0 {
 			if len(rowData.Row) > 1 {
 				part = "(" + part + ")"

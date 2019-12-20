@@ -258,7 +258,7 @@ func initNewToken(w http.ResponseWriter, r *http.Request) {
 				for i, filter := range filterprocessor.filter {
 					if filter.ID == filterID {
 						filterprocessor.filter[i].Skip = false
-						wheresql, joinAdd, err := getFilterSQL(filter)
+						wheresql, joinAdd, err := getFilterSQL(filter, "BlockedIP.pk_id")
 						if err != nil {
 							LogCritical("Error getting filterWhere: " + err.Error())
 							return

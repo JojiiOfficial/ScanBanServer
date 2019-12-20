@@ -48,7 +48,7 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 		if hasCache > 0 {
 			sql += filter.SQLCache
 		} else {
-			sqlwhere, joinAdd, err := getFilterSQL(filter)
+			sqlwhere, joinAdd, err := getFilterSQL(filter, strconv.FormatUint(uint64(ipData.IPID), 10))
 			if err != nil {
 				LogError("Error apllying filter: " + err.Error())
 				continue
@@ -80,7 +80,7 @@ func (processor *Filterprocessor) handleIP(ipData IPDataResult) {
 
 		go (func() {
 			if hitFilter {
-				if isInFilter {
+				if !isInFilter {
 					execDB("INSERT INTO FilterIP (ip, filterID, added) VALUES(?,?,(SELECT UNIX_TIMESTAMP()))", ipData.IPID, filter.ID)
 				}
 			} else if hitFilter && isInFilter {
