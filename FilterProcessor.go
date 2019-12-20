@@ -216,7 +216,7 @@ func (processor *Filterprocessor) updateCachedFilter(initial bool) bool {
 
 	//Append filter to processor->filter
 	for _, filter := range filters {
-		if len(filter.Rows) > 0 &&{
+		if len(filter.Rows) > 0 {
 			processor.filter = append(processor.filter, filter)
 		}
 	}
