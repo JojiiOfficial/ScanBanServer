@@ -51,7 +51,7 @@ var databasetestCMD = &cli.Command{
 			return nil
 		}
 		for _, ip := range ips {
-			go fmt.Println(IPDataRequest(ip, true))
+			go fmt.Println(ip, ":", IPDataRequest(ip, true))
 		}
 
 		return nil
