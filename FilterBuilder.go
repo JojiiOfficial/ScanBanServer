@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -42,9 +43,7 @@ func (builder *FilterBuilder) handleIP(ipData IPDataResult) {
 		if filter.Skip {
 			continue
 		}
-
 		start1 := time.Now()
-		_ = start1
 		sql := "SELECT 1 FROM BlockedIP "
 		hasCache := len(filter.SQLCache)
 		if hasCache > 0 {
@@ -62,18 +61,18 @@ func (builder *FilterBuilder) handleIP(ipData IPDataResult) {
 			sql += scndPart
 			builder.filter[i].SQLCache = scndPart
 		}
-		//fmt.Println("Getting filterSQL took", time.Now().Sub(start1).String())
+		fmt.Println("Getting filterSQL took", time.Now().Sub(start1).String())
 
 		start1 = time.Now()
 		baseSQL := sql + strconv.FormatUint(uint64(ipData.IPID), 10) + " LIMIT 1"
-		//fmt.Println(baseSQL)
+		fmt.Println(baseSQL)
 		var hitFilterI int
 		hitFilter := true
 		err := queryRow(&hitFilterI, baseSQL)
 		if err != nil {
 			hitFilter = false
 		}
-		//fmt.Println("applying filter took", time.Now().Sub(start1).String())
+		fmt.Println("applying filter took", time.Now().Sub(start1).String())
 		start1 = time.Now()
 		var alreadyInIPFilter int
 		isInFilter := true
@@ -81,8 +80,7 @@ func (builder *FilterBuilder) handleIP(ipData IPDataResult) {
 		if err != nil {
 			isInFilter = false
 		}
-		//fmt.Println("IsAlreadyInFilter took: ", time.Now().Sub(start1).String())
-
+		fmt.Println("IsAlreadyInFilter took: ", time.Now().Sub(start1).String())
 		go (func() {
 			if hitFilter {
 				if !isInFilter {
@@ -102,7 +100,7 @@ func (builder *FilterBuilder) handleIP(ipData IPDataResult) {
 			}
 		})()
 	}
-	//LogInfo("Applying filter took " + time.Now().Sub(start).String())
+	LogInfo("Applying filter took " + time.Now().Sub(start).String())
 }
 
 func (builder *FilterBuilder) updateCachedFilter(initial bool) bool {

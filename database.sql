@@ -23,12 +23,16 @@ CREATE TABLE BlockedIP (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 DELIMITER $$
 CREATE TRIGGER `Handle update` BEFORE UPDATE ON `BlockedIP` FOR EACH ROW IF (NEW.deleted = 1) THEN
+
     SET NEW.reportCount = 0;
     SET NEW.lastReport=(SELECT UNIX_TIMESTAMP());
+    
     DELETE FROM ReportPorts WHERE ReportPorts.reportID=(SELECT pk_id FROM Report WHERE Report.ip=NEW.pk_id);
-    DELETE FROM Report WHERE Report.ip=NEW.pk_id;
-
-
+    DELETE FROM Report WHERE Report.ip = NEW.pk_id;
+    INSERT INTO FilterDelete (ip,tokenID) (SELECT DISTINCT NEW.pk_id,Token.pk_id FROM Token JOIN FilterIP ON FilterIP.filterID = Token.filter WHERE FilterIP.ip=NEW.pk_id);
+    DELETE FROM FilterIP WHERE FilterIP.ip = NEW.pk_id;
+    DELETE FROM IPports WHERE IPports.ip = NEW.pk_id;
+    
 ELSEIF (NEW.reportCount>1) THEN
 
 SET NEW.lastReport=(SELECT UNIX_TIMESTAMP());
@@ -60,6 +64,12 @@ CREATE TABLE FilterIP (
   filterID int(11) UNSIGNED NOT NULL,
   added bigint(20) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+DELIMITER $$
+CREATE TRIGGER `Remove FilterDelete if IP was inserted` AFTER INSERT ON `FilterIP` FOR EACH ROW DELETE FilterDelete FROM FilterDelete
+JOIN Token ON Token.pk_id = FilterDelete.tokenID
+WHERE FilterDelete.ip=NEW.ip AND Token.filter = NEW.filterID
+$$
+DELIMITER ;
 
 CREATE TABLE FilterPart (
   pk_id int(10) UNSIGNED NOT NULL,
@@ -131,7 +141,7 @@ CREATE TABLE Report (
 CREATE TABLE ReportPorts (
   pk_id int(10) UNSIGNED NOT NULL,
   reportID int(10) UNSIGNED DEFAULT NULL,
-  port int(11) DEFAULT NULL,
+  port smallint(5) UNSIGNED DEFAULT NULL,
   count int(10) UNSIGNED DEFAULT NULL,
   scanDate int(10) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -188,7 +198,8 @@ ALTER TABLE FilterDelete
 
 ALTER TABLE FilterIP
   ADD PRIMARY KEY (pk_id),
-  ADD KEY ip (ip);
+  ADD KEY ip (ip),
+  ADD KEY filterID (filterID);
 
 ALTER TABLE FilterPart
   ADD PRIMARY KEY (pk_id),
@@ -274,14 +285,12 @@ ALTER TABLE UserMachines
 ALTER TABLE BlockedIP
   ADD CONSTRAINT BlockedIP_ibfk_1 FOREIGN KEY (type) REFERENCES IPtype (pk_id);
 
-ALTER TABLE FilterChange
-  ADD CONSTRAINT FilterChange_ibfk_1 FOREIGN KEY (filterID) REFERENCES Filter (pk_id);
-
 ALTER TABLE FilterDelete
   ADD CONSTRAINT FilterDelete_ibfk_1 FOREIGN KEY (ip) REFERENCES BlockedIP (pk_id);
 
 ALTER TABLE FilterIP
-  ADD CONSTRAINT FilterIP_ibfk_1 FOREIGN KEY (ip) REFERENCES BlockedIP (pk_id);
+  ADD CONSTRAINT FilterIP_ibfk_1 FOREIGN KEY (ip) REFERENCES BlockedIP (pk_id),
+  ADD CONSTRAINT FilterIP_ibfk_2 FOREIGN KEY (filterID) REFERENCES Filter (pk_id);
 
 ALTER TABLE FilterRow
   ADD CONSTRAINT FilterRow_ibfk_1 FOREIGN KEY (filterID) REFERENCES Filter (pk_id),

@@ -37,8 +37,9 @@ func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 	})()
 
 	ipdataresult := []IPDataResult{}
-
+	var cdone chan bool
 	for _, ipdata := range ipdatas {
+		cdone = make(chan bool, 1)
 		ipID, reportID, err := insertIP(ipdata, uid)
 		if ipID == 0 {
 			ipID = getIPID(ipdata.IP)
@@ -77,7 +78,7 @@ func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 					batches[pos] = append(batches[pos], time)
 				}
 			}
-			insertBatch(batches, reportID, iPPort, starttime, ipID)
+			insertBatch(batches, reportID, iPPort, starttime, ipID, cdone)
 		}
 
 		ipdataresult = append(ipdataresult, IPDataResult{
@@ -87,6 +88,7 @@ func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 	}
 
 	go (func() {
+		<-cdone
 		for _, ipdata := range ipdataresult {
 			filterbuilder.addIP(ipdata)
 		}
@@ -95,7 +97,7 @@ func insertIPs(token string, ipdatas []IPData, starttime uint64) int {
 	return 1
 }
 
-func insertBatch(batch map[int][]int, reportID uint, ipportreport IPPortReport, startTime uint64, ipID uint) {
+func insertBatch(batch map[int][]int, reportID uint, ipportreport IPPortReport, startTime uint64, ipID uint, cdone chan bool) {
 	values := ""
 	for _, b := range batch {
 		scanCount := len(b)
@@ -128,6 +130,7 @@ func insertBatch(batch map[int][]int, reportID uint, ipportreport IPPortReport, 
 				} else {
 					execDB("INSERT INTO IPports (ip, port, count) VALUES(?,?,?)", ipID, ipportreport.Port, scanCount)
 				}
+				cdone <- true
 			})()
 		}
 	}
