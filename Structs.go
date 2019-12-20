@@ -88,7 +88,7 @@ type IPset struct {
 //IPList a list of ips from DB
 type IPList struct {
 	IP      string `db:"ip" json:"ip"`
-	Deleted int    `db:"deleted" json:"del"`
+	Deleted int    `db:"del" json:"del"`
 }
 
 //IPInfoRequest request for ipinfo

@@ -255,14 +255,31 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 		return nil, -3
 	}
 
-	query :=
-		"SELECT ip,deleted " +
-			"FROM BlockedIP " +
-			"WHERE " +
-			"(lastReport >= ? OR firstReport >= ?) "
+	var filterID uint
+	err := queryRow(&filterID, "SELECT IFNULL(filter, 0) FROM Token WHERE token=?", token)
+	if err != nil {
+		return nil, -2
+	}
 
 	var iplist []IPList
-	err := queryRows(&iplist, query, filter.Since, filter.Since)
+	var query string
+	if filterID == 0 {
+		query =
+			"SELECT ip,deleted AS del" +
+				"FROM BlockedIP " +
+				"WHERE " +
+				"(lastReport >= ? OR firstReport >= ?) "
+		err = queryRows(&iplist, query, filter.Since, filter.Since)
+	} else {
+		query = "SELECT BlockedIP.ip AS ip,0 AS del FROM BlockedIP " +
+			"JOIN FilterIP ON FilterIP.ip = BlockedIP.pk_id WHERE FilterIP.filterID=? AND FilterIP.added > ? AND deleted=0 " +
+			"UNION " +
+			"SELECT BlockedIP.ip,1 AS del FROM FilterDelete JOIN BlockedIP ON BlockedIP.pk_id = FilterDelete.ip WHERE FilterDelete.tokenID=(SELECT pk_id FROM Token WHERE Token.token=?)"
+		err = queryRows(&iplist, query, filterID, filter.Since, token)
+		go (func() {
+			execDB("DELETE FROM FilterDelete WHERE tokenID=(SELECT pk_id FROM Token WHERE Token.token=?)", token)
+		})()
+	}
 
 	if err != nil {
 		LogCritical("Executing fetch: " + err.Error())

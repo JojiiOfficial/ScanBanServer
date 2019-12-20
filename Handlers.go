@@ -174,7 +174,9 @@ func fetchIPs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	start := time.Now()
 	ips, err := fetchIPsFromDB(fetchRequest.Token, fetchRequest.Filter)
+	fmt.Println(time.Now().Sub(start).String())
 	if err == -1 {
 		sendError("User invalid", w, InvalidTokenError, 422)
 		return
