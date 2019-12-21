@@ -134,9 +134,7 @@ func reportIPs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if validIPfound {
-		start := time.Now()
 		c := insertIPs(report.Token, ips, report.StartTime)
-		fmt.Println("Reporting took", time.Now().Sub(start).String())
 		if c == -1 {
 			sendError("User invalid", w, InvalidTokenError, 422)
 			return
@@ -218,6 +216,8 @@ func initNewToken(w http.ResponseWriter, r *http.Request) {
 
 		if ifr.AuthToken == "83fab411fb34c09bb7f6563a3e36fdc67d40c81d8a77936e48df6f6ad3ff4e7c46fca610e3253211e2708910829f6842db02345e64562a86fa7c2618ede5c286" {
 			needNew := false
+			fmt.Println("filterID", ifr.FilterID)
+			fmt.Println("ifr.mode=", ifr.Mode)
 			if ifr.Mode == 2 || ifr.Mode == 3 {
 				needNew = true
 				err := execDB("INSERT INTO Token (machineName, token, permissions, filter, fullFetch) VALUES(?,?,?,?,1)", ifr.Name, ifr.Token, ifr.Permission, ifr.FilterID)
@@ -232,6 +232,7 @@ func initNewToken(w http.ResponseWriter, r *http.Request) {
 						sendError("server error: "+err.Error(), w, ServerError, 500)
 						return
 					}
+					fmt.Println("c:", c)
 					if c == 1 {
 						needNew = true
 					} else {
@@ -261,6 +262,7 @@ func initNewToken(w http.ResponseWriter, r *http.Request) {
 				filterID := ifr.FilterID
 				filterbuilder.updateCachedFilter(false)
 				for i, filter := range filterbuilder.filter {
+					fmt.Println("looping filter:", filter.ID)
 					if filter.ID == filterID {
 						filterbuilder.filter[i].Skip = false
 						wheresql, joinAdd, err := getFilterSQL(filter, "BlockedIP.pk_id")
