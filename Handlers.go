@@ -220,7 +220,7 @@ func initNewToken(w http.ResponseWriter, r *http.Request) {
 			needNew := false
 			if ifr.Mode == 2 || ifr.Mode == 3 {
 				needNew = true
-				err := execDB("INSERT INTO Token (machineName, token, permissions, filter) VALUES(?,?,?,?)", ifr.Name, ifr.Token, ifr.Permission, ifr.FilterID)
+				err := execDB("INSERT INTO Token (machineName, token, permissions, filter, fullFetch) VALUES(?,?,?,?,1)", ifr.Name, ifr.Token, ifr.Permission, ifr.FilterID)
 				if err != nil {
 					sendError("server error: "+err.Error(), w, ServerError, 500)
 					return
@@ -246,7 +246,7 @@ func initNewToken(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			} else if ifr.Mode == 1 {
-				err := execDB("INSERT INTO Token (machineName, token, permissions, filter) VALUES(?,?,?,NULL)", ifr.Name, ifr.Token, ifr.Permission)
+				err := execDB("INSERT INTO Token (machineName, token, permissions, filter, fullFetch) VALUES(?,?,?,NULL,1)", ifr.Name, ifr.Token, ifr.Permission)
 				if err != nil {
 					sendError("server error: "+err.Error(), w, ServerError, 500)
 					return
