@@ -175,7 +175,7 @@ func fetchIPs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	start := time.Now()
-	ips, err := fetchIPsFromDB(fetchRequest.Token, fetchRequest.Filter)
+	ips, fullFetch, err := fetchIPsFromDB(fetchRequest.Token, fetchRequest.Filter)
 	fmt.Println(time.Now().Sub(start).String())
 	if err == -1 {
 		sendError("User invalid", w, InvalidTokenError, 422)
@@ -193,6 +193,7 @@ func fetchIPs(w http.ResponseWriter, r *http.Request) {
 			fetchresponse := FetchResponse{
 				IPs:              ips,
 				CurrentTimestamp: time.Now().Unix(),
+				Full:             fullFetch,
 			}
 			handleError(sendSuccess(w, fetchresponse), w, ServerError, 500)
 		}

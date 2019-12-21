@@ -74,6 +74,7 @@ type FetchFilter struct {
 type FetchResponse struct {
 	IPs              []IPList `json:"ips"`
 	CurrentTimestamp int64    `json:"cts"`
+	Full             bool     `json:"full"`
 }
 
 // -------------- Datatypes structs ----------------------

@@ -245,20 +245,29 @@ func getIPInfo(ips []string, token string) (int, *[]IPInfoData) {
 }
 
 //---------------------------------------- Fetch IPs ---------------------------------------
-func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
+type tokenFetchData struct {
+	FilterID  uint `db:"fid"`
+	FullFetch bool `db:"fullFetch"`
+}
+
+func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, bool, int) {
 	valid, _, permissions := IsUserValid(token)
 	if !valid {
-		return nil, -1
+		return nil, false, -1
 	}
 
 	if !canUser(permissions, FetchIPs) {
-		return nil, -3
+		return nil, false, -3
 	}
 
-	var filterID uint
-	err := queryRow(&filterID, "SELECT IFNULL(filter, 0) FROM Token WHERE token=?", token)
-	if err != nil || filterID < 0 {
-		return nil, -2
+	var tokenData tokenFetchData
+	err := queryRow(&tokenData, "SELECT IFNULL(filter, 0)as fid,fullFetch FROM Token WHERE token=?", token)
+	if err != nil || tokenData.FilterID < 0 {
+		return nil, false, -2
+	}
+
+	if tokenData.FullFetch {
+		filter.Since = 0
 	}
 
 	go (func() {
@@ -267,7 +276,7 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 
 	var iplist []IPList
 	var query string
-	if filterID == 0 {
+	if tokenData.FilterID == 0 {
 		query =
 			"SELECT ip,deleted AS del " +
 				"FROM BlockedIP " +
@@ -279,7 +288,7 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 			"JOIN FilterIP ON FilterIP.ip = BlockedIP.pk_id WHERE FilterIP.filterID=? AND FilterIP.added > ? AND deleted=0 " +
 			"UNION " +
 			"SELECT BlockedIP.ip,1 AS del FROM FilterDelete JOIN BlockedIP ON BlockedIP.pk_id = FilterDelete.ip WHERE FilterDelete.tokenID=(SELECT pk_id FROM Token WHERE Token.token=?)"
-		err = queryRows(&iplist, query, filterID, filter.Since, token)
+		err = queryRows(&iplist, query, tokenData.FilterID, filter.Since, token)
 		go (func() {
 			execDB("DELETE FROM FilterDelete WHERE tokenID=(SELECT pk_id FROM Token WHERE Token.token=?)", token)
 		})()
@@ -287,17 +296,17 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 
 	if err != nil {
 		LogCritical("Executing fetch: " + err.Error())
-		return nil, 1
+		return nil, false, 1
 	}
 
 	go (func() {
-		err := execDB("UPDATE Token SET requests=requests+1 WHERE token=?", token)
+		err := execDB("UPDATE Token SET requests=requests+1,fullFetch=0 WHERE token=?", token)
 		if err != nil {
 			LogError("Error updating requests count")
 		}
 	})()
 
-	return iplist, 0
+	return iplist, tokenData.FullFetch, 0
 }
 
 //IsUserValid returns userid if valid or -1 if invalid
