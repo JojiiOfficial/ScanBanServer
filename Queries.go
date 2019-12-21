@@ -257,9 +257,13 @@ func fetchIPsFromDB(token string, filter FetchFilter) ([]IPList, int) {
 
 	var filterID uint
 	err := queryRow(&filterID, "SELECT IFNULL(filter, 0) FROM Token WHERE token=?", token)
-	if err != nil {
+	if err != nil || filterID < 0 {
 		return nil, -2
 	}
+
+	go (func() {
+		execDB("UPDATE Token SET lastRequest=now() WHERE token=?", token)
+	})()
 
 	var iplist []IPList
 	var query string
