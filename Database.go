@@ -48,26 +48,6 @@ func queryRows(a interface{}, query string, args ...interface{}) error {
 }
 
 func execDB(query string, args ...interface{}) error {
-	dbLock.Lock()
-	tx := db.MustBegin()
-	tx.MustExec(query, args...)
-	err := tx.Commit()
-	dbLock.Unlock()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func namedExecDB(query string, arg interface{}) error {
-	tx := db.MustBegin()
-	_, err := tx.NamedExec(query, arg)
-	if err != nil {
-		return err
-	}
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := db.Exec(query, args...)
+	return err
 }
