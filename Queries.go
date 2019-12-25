@@ -156,19 +156,23 @@ func getIPID(ip string) uint {
 }
 
 func insertReport(ip uint, uid uint) (uint, error) {
-	err := execDB("INSERT INTO Report (ip, reporterID, firstReport) VALUES(?,?,(SELECT UNIX_TIMESTAMP()))", ip, uid)
+	r, err := db.Exec("INSERT INTO Report (ip, reporterID, firstReport) VALUES(?,?,(SELECT UNIX_TIMESTAMP()))", ip, uid)
 	if err != nil {
 		return 0, err
 	}
-
-	var id uint
-	err = queryRow(&id, "SELECT Report.pk_id FROM Report WHERE ip=? AND reporterID=?", ip, uid)
-	if err != nil {
-		return 0, err
-	} else if id == 0 {
-		return 0, errors.New("report not found")
+	id, err := r.LastInsertId()
+	if err != nil || id < 1 {
+		LogInfo("Server does not support getting last inserted ID:" + err.Error())
+		var id uint
+		err = queryRow(&id, "SELECT Report.pk_id FROM Report WHERE ip=? AND reporterID=?", ip, uid)
+		if err != nil {
+			return 0, err
+		} else if id == 0 {
+			return 0, errors.New("report not found")
+		}
+		return id, nil
 	}
-	return id, nil
+	return uint(id), nil
 }
 
 func insertIP(ipdata IPData, uid uint) (IPid uint, reportID uint, err error) {
