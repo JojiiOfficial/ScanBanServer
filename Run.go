@@ -40,13 +40,13 @@ var runCMD = &cli.Command{
 			}
 		})
 
-		_, err := os.Stat("./config.json")
+		_, err := os.Stat("./data/config.json")
 		if err != nil {
-			LogError("Couldn't find config.json")
+			LogError("Couldn't find ./data/config.json")
 			return nil
 		}
 
-		config = readConfig("config.json")
+		config = readConfig("./data/config.json")
 		showTimeInLog = config.ShowTimeInLog
 
 		_, err = os.Stat("./dyn.ip")

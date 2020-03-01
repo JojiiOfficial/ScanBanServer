@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: scanban
+  name: scanban
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: scanban
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: scanban
+    spec:
+      containers:
+      - image: jojii/scanban:v1
+        name: scanban
+        volumeMounts:
+        - name: config
+          mountPath: /app/data/
+      volumes:
+      - name: config
+        configMap:
+          name: scanbanconfig
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: scanban
+  name: scanban
+spec:
+  ports:
+  - name: 9003-8080
+    port: 9003
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: scanban
+  type: NodePort
+  externalIPs:
+  - <IP>
+status:
+  loadBalancer: {}
