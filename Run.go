@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/mkideal/cli"
 	"github.com/theckman/go-ipdata"
@@ -90,6 +89,12 @@ var runCMD = &cli.Command{
 			return nil
 		}
 
+		//build cache only
+		if len(os.Getenv("SCANBAN_BUILD_GRAPH")) > 0 {
+			updateGraphCache()
+			return nil
+		}
+
 		useTLS := false
 		if len(config.CertFile) > 0 {
 			_, err = os.Stat(config.CertFile)
@@ -117,9 +122,7 @@ var runCMD = &cli.Command{
 		}
 
 		filterbuilder.start()
-		startGraphUpdater()
 		log.Fatal(http.ListenAndServe(":8080", router))
-
 		return nil
 	},
 }
@@ -143,14 +146,4 @@ func updateGraphCache() {
 	execDB("DELETE FROM GraphCache")
 	execDB("INSERT INTO GraphCache (graphID, time, value1, value2) (SELECT 1 as graphID, scanDate as hour,COUNT(count) as value1,sum(count) as value2 FROM ReportPorts WHERE DATE_SUB(NOW(), INTERVAL 2 DAY) < DATE(FROM_UNIXTIME(scanDate)) AND scanDate < UNIX_TIMESTAMP() GROUP BY HOUR(from_unixtime(scanDate)), DAY(FROM_UNIXTIME(scanDate)), WEEK(FROM_UNIXTIME(scanDate)), MONTH(FROM_UNIXTIME(scanDate)), YEAR(FROM_UNIXTIME(scanDate))ORDER by scanDate DESC LIMIT 25)")
 	execDB("INSERT INTO GraphCache (GraphCache.graphID, GraphCache.value1, GraphCache.value2, GraphCache.time) (SELECT 2, ReportPorts.port, SUM(ReportPorts.count) as count, ReportPorts.port FROM Report JOIN ReportPorts on ReportPorts.reportID = Report.pk_id GROUP BY ReportPorts.port)")
-}
-
-func startGraphUpdater() {
-	go (func() {
-		ticker := time.NewTicker(5 * time.Minute)
-		for {
-			updateGraphCache()
-			<-ticker.C
-		}
-	})()
 }
