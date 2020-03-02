@@ -1,0 +1,46 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  creationTimestamp: null
+  name: scanbanbuildgraph
+  namespace: default
+  resourceVersion: "371490"
+  selfLink: /apis/batch/v1beta1/namespaces/default/cronjobs/scanbanbuildgraph
+spec:
+  schedule: 0 * * * *
+  suspend: false
+  concurrencyPolicy: Allow
+  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 0
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+      name: scanbanbuildgraph
+    spec:
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          containers:
+          - env:
+            - name: SCANBAN_BUILD_GRAPH
+              value: "true"
+            image: jojii/scanban:v1.1
+            imagePullPolicy: IfNotPresent
+            name: scanbanserver
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+            - mountPath: /app/data/
+              name: config
+          dnsPolicy: ClusterFirst
+          restartPolicy: OnFailure
+          schedulerName: default-scheduler
+          securityContext: {}
+          terminationGracePeriodSeconds: 30
+          volumes:
+          - configMap:
+              defaultMode: 420
+              name: scanbanconfig
+            name: config
