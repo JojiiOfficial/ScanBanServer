@@ -317,7 +317,7 @@ func updateFilterCache(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleUserInput(w http.ResponseWriter, r *http.Request, p interface{}) bool {
-	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 10000))
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 40000000))
 	if err != nil {
 		LogError("ReadError: " + err.Error())
 		return false
