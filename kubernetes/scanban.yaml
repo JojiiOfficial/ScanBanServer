@@ -22,7 +22,7 @@ spec:
         app: scanban
     spec:
       containers:
-      - image: jojii/scanban:v1
+      - image: jojii/scanban:v1.1
         name: scanban
         volumeMounts:
         - name: config
